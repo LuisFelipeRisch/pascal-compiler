@@ -31,10 +31,9 @@ typedef enum simbolos {
 
 extern simbolos simbolo, relacao;
 extern char token[TAM_TOKEN];
-extern int nivel_lexico;
-extern int desloc;
-extern int nl;
-
+extern unsigned int nivel_lexico;
+extern unsigned int desloc;
+extern unsigned int nl;
 
 /* -------------------------------------------------------------------
  * prototipos globais

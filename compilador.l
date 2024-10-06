@@ -24,7 +24,10 @@
 //#define IMPRIME(STR) {};
 #define IMPRIME(STR) printf("%s    # %s \n", STR, token);
 
-int nl = 1;
+unsigned int nl = 1;
+unsigned int nivel_lexico = 0; 
+unsigned int desloc = 0;
+
 
 %}
 

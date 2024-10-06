@@ -4,3 +4,5 @@ compilador.tab.h
 lex.yy.c
 compilador.output
 compilador
+*.o
+.vscode

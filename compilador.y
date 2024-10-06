@@ -9,8 +9,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include "compilador.h"
+#include "symbol_table.h"
 
 int num_vars;
+SymbolTable* symbol_table;
 
 %}
 
@@ -58,7 +60,8 @@ declara_vars: declara_vars declara_var
 declara_var : { }
               lista_id_var DOIS_PONTOS
               tipo
-              { /* AMEM */
+              {
+               
               }
               PONTO_E_VIRGULA
 ;
@@ -67,8 +70,8 @@ tipo        : IDENT
 ;
 
 lista_id_var: lista_id_var VIRGULA IDENT
-              { /* insere �ltima vars na tabela de s�mbolos */ }
-            | IDENT { /* insere vars na tabela de s�mbolos */}
+              { insert_simple_variable_in_symbol_table(symbol_table, token, nivel_lexico, desloc++); num_vars++; }
+            | IDENT { insert_simple_variable_in_symbol_table(symbol_table, token, nivel_lexico, desloc++); num_vars++; }
 ;
 
 lista_idents: lista_idents VIRGULA IDENT
@@ -99,10 +102,7 @@ int main (int argc, char** argv) {
       return(-1);
    }
 
-
-/* -------------------------------------------------------------------
- *  Inicia a Tabela de S�mbolos
- * ------------------------------------------------------------------- */
+   symbol_table = create_symbol_table();
 
    yyin=fp;
    yyparse();
