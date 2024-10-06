@@ -39,7 +39,11 @@ void geraCodigo (char* rot, char* comando) {
   }
 }
 
-int imprimeErro ( char* erro ) {
+int imprimeErro ( const char* erro ) {
   fprintf (stderr, "Erro na linha %d - %s\n", nl, erro);
   exit(-1);
+}
+
+void yyerror(const char *s) {
+  imprimeErro(s);
 }
