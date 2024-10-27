@@ -11,6 +11,7 @@
 #include "compilador.h"
 #include "symbol_table.h"
 
+char mepa_command[10];
 int num_vars;
 SymbolTable* symbol_table;
 
@@ -24,49 +25,42 @@ SymbolTable* symbol_table;
 
 %%
 
-programa    :{
-             geraCodigo (NULL, "INPP");
-             }
-             PROGRAM IDENT
-             ABRE_PARENTESES lista_idents FECHA_PARENTESES PONTO_E_VIRGULA
-             bloco PONTO {
-             geraCodigo (NULL, "PARA");
-             }
+programa: { geraCodigo (NULL, "INPP"); nivel_lexico = 0; }
+   PROGRAM IDENT ABRE_PARENTESES lista_idents FECHA_PARENTESES PONTO_E_VIRGULA
+   bloco PONTO { geraCodigo (NULL, "PARA"); }
 ;
 
-bloco       :
-              parte_declara_vars
-              {
-              }
-
-              comando_composto
-              ;
-
-
-
+bloco: { num_vars = 0; desloc = 0; }
+   parte_declara_vars 
+   {
+      if (num_vars > 0) {
+         sprintf(mepa_command, "AMEM %d", num_vars);
+         geraCodigo(NULL, mepa_command);
+      }
+   }
+   comando_composto
+;
 
 parte_declara_vars:  var
 ;
 
 
-var         : { } VAR declara_vars
-            |
+var: { } 
+   VAR declara_vars
+   |
 ;
 
 declara_vars: declara_vars declara_var
             | declara_var
 ;
 
-declara_var : { }
-              lista_id_var DOIS_PONTOS
-              tipo
-              {
-               
-              }
-              PONTO_E_VIRGULA
+declara_var: { }
+            lista_id_var DOIS_PONTOS
+            tipo { update_latest_nodes_with_variable_type(symbol_table, INTEGER); }
+            PONTO_E_VIRGULA
 ;
 
-tipo        : IDENT
+tipo: IDENT
 ;
 
 lista_id_var: lista_id_var VIRGULA IDENT

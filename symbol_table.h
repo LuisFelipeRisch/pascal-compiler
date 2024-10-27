@@ -20,6 +20,7 @@ struct SymbolTableNode {
   void* attributes;
 
   SymbolTableNode* next;
+  SymbolTableNode* previous;
 };
 
 struct SymbolTable {
@@ -29,5 +30,6 @@ struct SymbolTable {
 SymbolTable* create_symbol_table();
 void insert_in_symbol_table(SymbolTable* symbol_table, char* identifier, enum IdentifierCategories identifier_category, unsigned int lexical_level, void* attributes);
 void insert_simple_variable_in_symbol_table(SymbolTable* symbol_table, char* identifier, unsigned int lexical_level, unsigned int offset);
+void update_latest_nodes_with_variable_type(SymbolTable* symbol_table, enum VariableTypes variable_type); 
 
 #endif

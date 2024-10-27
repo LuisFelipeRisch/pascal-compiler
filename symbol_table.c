@@ -19,8 +19,11 @@ void insert_in_symbol_table(SymbolTable* symbol_table, char* identifier, enum Id
   symbol_table_node->identifier_category = identifier_category; 
   symbol_table_node->lexical_level = lexical_level;
   symbol_table_node->attributes = attributes;
+  symbol_table_node->next = NULL;
+  symbol_table_node->previous = symbol_table->top;
 
-  symbol_table_node->next = symbol_table->top; 
+  if (symbol_table->top) symbol_table->top->next = symbol_table_node;
+
   symbol_table->top = symbol_table_node;
 }
 
@@ -32,5 +35,18 @@ void insert_simple_variable_in_symbol_table(SymbolTable* symbol_table, char* ide
   simple_variable_attributes->offset = offset;
 
   insert_in_symbol_table(symbol_table, identifier, SIMPLE_VARIABLE, lexical_level, attributes);
+}
+
+void update_latest_nodes_with_variable_type(SymbolTable* symbol_table, enum VariableTypes variable_type){
+  SymbolTableNode* current_node = symbol_table->top;
+  SimpleVariableAttributes* current_node_attributes = (SimpleVariableAttributes *) current_node->attributes;
+
+  while (current_node && current_node_attributes->variable_type == UNKNOWN)
+  {
+    current_node_attributes->variable_type = variable_type; 
+
+    current_node = current_node->previous;
+    if(current_node) current_node_attributes = (SimpleVariableAttributes *) current_node->attributes;
+  }
 }
 
