@@ -50,3 +50,21 @@ void update_latest_nodes_with_variable_type(SymbolTable* symbol_table, enum Vari
   }
 }
 
+void remove_node_from_symbol_table(SymbolTable* symbol_table) {
+  SymbolTableNode* top = symbol_table->top; 
+
+  symbol_table->top = top->previous; 
+
+  free(top->identifier); 
+  free(top->attributes); 
+  free(top);
+}
+
+void remove_n_latest_nodes_from_symbol_table(SymbolTable* symbol_table, int n) {
+  for(int i = 0; i < n; i++) remove_node_from_symbol_table(symbol_table);
+}
+
+void free_symbol_table(SymbolTable* symbol_table){
+  while (symbol_table->top) remove_node_from_symbol_table(symbol_table);
+  free(symbol_table);
+}
