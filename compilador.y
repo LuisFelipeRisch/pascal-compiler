@@ -10,10 +10,12 @@
 #include <string.h>
 #include "compilador.h"
 #include "symbol_table.h"
+#include "int_stack.h"
 
 char mepa_command[10];
-int num_vars;
+int num_vars, dmem_num_vars;
 SymbolTable* symbol_table;
+IntStack* amem_stack;
 
 %}
 
@@ -37,8 +39,18 @@ bloco: { num_vars = 0; desloc = 0; }
          sprintf(mepa_command, "AMEM %d", num_vars);
          geraCodigo(NULL, mepa_command);
       }
+
+      push_int_stack(amem_stack, num_vars);
    }
    comando_composto
+   {
+      dmem_num_vars = pop_int_stack(amem_stack); 
+      if (dmem_num_vars > 0) {
+         remove_n_latest_nodes_from_symbol_table(symbol_table, dmem_num_vars);
+         sprintf(mepa_command, "DMEM %d", dmem_num_vars);
+         geraCodigo(NULL, mepa_command);
+      }
+   }
 ;
 
 parte_declara_vars:  var
@@ -96,10 +108,14 @@ int main (int argc, char** argv) {
       return(-1);
    }
 
+   amem_stack = create_int_stack();
    symbol_table = create_symbol_table();
 
    yyin=fp;
    yyparse();
+
+   free_int_stack(amem_stack);
+   free_symbol_table(symbol_table);
 
    return 0;
 }
