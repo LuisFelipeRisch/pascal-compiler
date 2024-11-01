@@ -1,4 +1,9 @@
      INPP
      AMEM 10
+     a
+     :=
+     c
+     d
+     e
      DMEM 10
      PARA

@@ -12,7 +12,7 @@
 #include "symbol_table.h"
 #include "int_stack.h"
 
-char mepa_command[10];
+char mepa_command[10], left_token[TAM_TOKEN];
 int num_vars, dmem_num_vars;
 SymbolTable* symbol_table;
 IntStack* amem_stack;
@@ -21,9 +21,11 @@ IntStack* amem_stack;
 
 %token PROGRAM ABRE_PARENTESES FECHA_PARENTESES
 %token VIRGULA PONTO_E_VIRGULA DOIS_PONTOS PONTO
-%token T_BEGIN T_END VAR IDENT ATRIBUICAO
+%token T_BEGIN T_END VAR IDENT NUMERO ATRIBUICAO
 %token PROCEDURE FUNCTION IF THEN ELSE WHILE DO
 %token OR DIV AND LABEL TYPE ARRAY OF NOT
+%token IGUAL DIFERENTE MENOR MENOR_IGUAL MAIOR MAIOR_IGUAL
+%token MAIS MENOS MULT
 
 %%
 
@@ -86,9 +88,112 @@ lista_idents: lista_idents VIRGULA IDENT
 
 
 comando_composto: T_BEGIN comandos T_END
-
-comandos:
 ;
+
+comandos: comandos PONTO_E_VIRGULA comando_sem_rotulo
+          | comando_sem_rotulo
+;
+
+comando_sem_rotulo: comando_composto
+                    | atribuicao_comando
+                    |
+;
+
+atribuicao_comando: token_da_esquerda { geraCodigo(NULL, token); }
+                     atribuicao { geraCodigo(NULL, token); }
+                     expressao
+;
+
+token_da_esquerda: IDENT
+;
+
+atribuicao: ATRIBUICAO
+;
+
+expressao: expressao_simples relacao expressao_simples
+           | expressao_simples
+;
+
+relacao: igual        
+         | diferente  
+         | menor      
+         | menor_igual
+         | maior      
+         | maior_igual
+;
+
+igual: IGUAL { $$ = "CMIG"; }
+;
+
+diferente: DIFERENTE { $$ = "CMDG"; }
+;
+
+menor: MENOR { $$ = "CMME"; }
+;
+
+menor_igual: MENOR_IGUAL { $$ = "CMEG"; }
+;
+
+maior: MAIOR { $$ = "CMMA"; }
+;
+
+maior_igual: MAIOR_IGUAL { $$ = "CMAG"; }
+;
+
+expressao_simples: expressao_simples mais_ou_menos_ou_or termo
+                   | mais_ou_menos termo
+;
+
+mais_ou_menos_ou_or: mais
+                     | menos
+                     | or
+;
+
+mais_ou_menos: mais
+               | menos
+               |
+;
+
+mais: MAIS { $$ = "SOMA"; }
+; 
+
+menos: MENOS { $$ = "SUBT"; }
+; 
+
+or: OR { $$ = "DISJ"; }
+; 
+
+termo: termo mult_ou_div_ou_and fator
+       | fator
+;
+
+mult_ou_div_ou_and: mult
+                    | div 
+                    | and
+;
+
+mult: MULT { $$ = "MULT"; }
+;
+
+div: DIV { $$ = "DIVI"; }
+;
+
+and: AND { $$ = "CONJ"; }
+;
+
+fator: ident { geraCodigo(NULL, token); }
+       | numero { geraCodigo(NULL, token); }
+       | ABRE_PARENTESES expressao FECHA_PARENTESES
+       | NOT fator
+;
+
+ident: IDENT
+;
+
+numero: NUMERO
+;
+
+
 
 
 %%

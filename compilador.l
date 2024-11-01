@@ -104,6 +104,12 @@ or { simbolo = simb_or;
             return OR;
 }
 
+mult { simbolo = simb_mult;
+            strncpy (token, yytext, TAM_TOKEN);
+            IMPRIME("mult ");
+            return MULT;
+}
+
 div { simbolo = simb_div;
             strncpy (token, yytext, TAM_TOKEN);
             IMPRIME("div ");
@@ -164,7 +170,7 @@ end { simbolo = simb_end;
           return T_END;
  }
 
-:= { simbolo = simb_atribuicao;
+\:= { simbolo = simb_atribuicao;
           strncpy (token, yytext, TAM_TOKEN);
           IMPRIME(" atribuicao  ");
           return ATRIBUICAO;
@@ -205,7 +211,61 @@ end { simbolo = simb_end;
           strncpy (token, yytext, TAM_TOKEN);
           IMPRIME(" fecha_parenteses ");
           return FECHA_PARENTESES;
- }
+    }
+
+\=  { simbolo = simb_igual;
+          strncpy (token, yytext, TAM_TOKEN);
+          IMPRIME(" igual ");
+          return IGUAL;
+    }
+
+\<>  { simbolo = simb_diferente;
+          strncpy (token, yytext, TAM_TOKEN);
+          IMPRIME(" diferente ");
+          return DIFERENTE;
+    }
+
+\<  { simbolo = simb_menor;
+          strncpy (token, yytext, TAM_TOKEN);
+          IMPRIME(" menor ");
+          return MENOR;
+    }
+
+\<=  { simbolo = simb_menor_igual;
+          strncpy (token, yytext, TAM_TOKEN);
+          IMPRIME(" menor_igual ");
+          return MENOR_IGUAL;
+    }
+
+\>  { simbolo = simb_maior;
+          strncpy (token, yytext, TAM_TOKEN);
+          IMPRIME(" maior ");
+          return MAIOR;
+    }
+
+\>=  { simbolo = simb_maior_igual;
+          strncpy (token, yytext, TAM_TOKEN);
+          IMPRIME(" maior_igual ");
+          return MAIOR_IGUAL;
+    }
+
+\+  { simbolo = simb_mais;
+          strncpy (token, yytext, TAM_TOKEN);
+          IMPRIME(" mais ");
+          return MAIS;
+    }
+
+\-  { simbolo = simb_menos;
+          strncpy (token, yytext, TAM_TOKEN);
+          IMPRIME(" menos ");
+          return MENOS;
+    }
+
+{numero} { simbolo = simb_numero;
+            strncpy (token, yytext, TAM_TOKEN);
+            IMPRIME(" numero  ");
+            return NUMERO;
+         }
 
 {ident} { simbolo = simb_identificador;
           strncpy (token, yytext, TAM_TOKEN);

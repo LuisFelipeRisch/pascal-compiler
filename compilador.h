@@ -20,7 +20,9 @@ typedef enum simbolos {
   simb_atribuicao, simb_abre_parenteses, simb_fecha_parenteses,
   simb_procedure, simb_function, simb_if, simb_then, simb_else, 
   simb_while, simb_do, simb_or, simb_div, simb_and, simb_label, 
-  simb_type, simb_array, simb_of, simb_not
+  simb_type, simb_array, simb_of, simb_not, simb_igual, simb_diferente, 
+  simb_menor, simb_menor_igual, simb_maior, simb_maior_igual, 
+  simb_mais, simb_menos, simb_mult
 } simbolos;
 
 
