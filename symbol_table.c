@@ -68,3 +68,18 @@ void free_symbol_table(SymbolTable* symbol_table){
   while (symbol_table->top) remove_node_from_symbol_table(symbol_table);
   free(symbol_table);
 }
+
+SymbolTableNode* find_node_from_symbol_table_by_identifier(SymbolTable* symbol_table, char* identifier){
+  SymbolTableNode *current_node = symbol_table->top; 
+  int found = 0;
+
+  while (current_node && !found)
+  {
+    if (!strcmp(current_node->identifier, identifier))
+      found = 1;
+    else 
+      current_node = current_node->previous;
+  }
+
+  return current_node; 
+}

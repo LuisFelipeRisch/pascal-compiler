@@ -32,6 +32,7 @@ void insert_in_symbol_table(SymbolTable* symbol_table, char* identifier, enum Id
 void insert_simple_variable_in_symbol_table(SymbolTable* symbol_table, char* identifier, unsigned int lexical_level, unsigned int offset);
 void update_latest_nodes_with_variable_type(SymbolTable* symbol_table, enum VariableTypes variable_type); 
 void remove_n_latest_nodes_from_symbol_table(SymbolTable* symbol_table, int n); 
-void free_symbol_table(SymbolTable* symbol_table); 
+void free_symbol_table(SymbolTable* symbol_table);
+SymbolTableNode* find_node_from_symbol_table_by_identifier(SymbolTable* symbol_table, char* identifier);
 
 #endif

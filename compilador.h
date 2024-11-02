@@ -44,3 +44,4 @@ extern unsigned int nl;
 void geraCodigo (char*, char*);
 int yylex();
 void yyerror(const char *s);
+int imprimeErro ( const char* erro );

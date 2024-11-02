@@ -12,10 +12,11 @@
 #include "symbol_table.h"
 #include "int_stack.h"
 
-char mepa_command[10], left_token[TAM_TOKEN];
+char mepa_command[100], error_command[100];
 int num_vars, dmem_num_vars;
 SymbolTable* symbol_table;
 IntStack* amem_stack;
+SymbolTableNode* left_node;
 
 %}
 
@@ -26,6 +27,21 @@ IntStack* amem_stack;
 %token OR DIV AND LABEL TYPE ARRAY OF NOT
 %token IGUAL DIFERENTE MENOR MENOR_IGUAL MAIOR MAIOR_IGUAL
 %token MAIS MENOS MULT
+
+%union {
+   char *str;
+   int int_val;
+}
+
+%type <str> relacao
+%type <str> mult_ou_div_ou_and
+%type <str> mais_ou_menos_ou_or
+%type <str> mais_ou_menos
+%type <int_val> termo
+%type <int_val> fator
+%type <int_val> expressao
+%type <int_val> expressao_simples
+%type <int_val> atribuicao
 
 %%
 
@@ -99,102 +115,127 @@ comando_sem_rotulo: comando_composto
                     |
 ;
 
-atribuicao_comando: token_da_esquerda { geraCodigo(NULL, token); }
-                     atribuicao { geraCodigo(NULL, token); }
-                     expressao
+atribuicao_comando: IDENT 
+                    { 
+                       left_node = find_node_from_symbol_table_by_identifier(symbol_table, token);
+                       if(!left_node){
+                          sprintf(error_command, "Variável '%s' não foi declarada ou está fora do escopo", token); 
+                          imprimeErro(error_command);
+                       }
+                    }
+                    atribuicao
 ;
 
-token_da_esquerda: IDENT
+atribuicao: ATRIBUICAO logica_atribuicao
+            |
 ;
 
-atribuicao: ATRIBUICAO
+logica_atribuicao: expressao
+                   {
+                     if(left_node->identifier_category == SIMPLE_VARIABLE){
+                        SimpleVariableAttributes* attributes = (SimpleVariableAttributes *) left_node->attributes;
+                        if(attributes->variable_type != $1) imprimeErro("Tipos incopatíveis.");
+
+                        sprintf(mepa_command, "ARMZ %d,%d", left_node->lexical_level, attributes->offset);
+                        geraCodigo(NULL, mepa_command);
+                     }
+                   }
 ;
 
 expressao: expressao_simples relacao expressao_simples
-           | expressao_simples
+           {
+            geraCodigo(NULL, "expresssão ahh");
+           }
+           | expressao_simples 
+             { 
+               $$ = $1;
+             }
 ;
 
-relacao: igual        
-         | diferente  
-         | menor      
-         | menor_igual
-         | maior      
-         | maior_igual
-;
-
-igual: IGUAL { $$ = "CMIG"; }
-;
-
-diferente: DIFERENTE { $$ = "CMDG"; }
-;
-
-menor: MENOR { $$ = "CMME"; }
-;
-
-menor_igual: MENOR_IGUAL { $$ = "CMEG"; }
-;
-
-maior: MAIOR { $$ = "CMMA"; }
-;
-
-maior_igual: MAIOR_IGUAL { $$ = "CMAG"; }
+relacao: IGUAL { $$ = "CMIG"; }        
+         | DIFERENTE { $$ = "CMDG"; }  
+         | MENOR { $$ = "CMME"; }      
+         | MENOR_IGUAL { $$ = "CMEG"; }
+         | MAIOR { $$ = "CMMA"; }      
+         | MAIOR_IGUAL { $$ = "CMAG"; }
 ;
 
 expressao_simples: expressao_simples mais_ou_menos_ou_or termo
+                   {
+                     if ((!strcmp("SOMA", $2) || !strcmp("SUBT", $2)) && $1 == INTEGER && $3 == INTEGER){
+                        sprintf(mepa_command, "%s", $2); 
+                        geraCodigo(NULL, mepa_command); 
+                        $$ = INTEGER;
+                     } else if (!strcmp("DISJ", $2) && $1 == BOOLEAN && $3 == BOOLEAN){
+                        sprintf(mepa_command, "%s", $2); 
+                        geraCodigo(NULL, mepa_command); 
+                        $$ = BOOLEAN;
+                     } else
+                        imprimeErro("Tipos incopatíveis.");
+                   }
                    | mais_ou_menos termo
+                     {
+                        $$ = $2;
+                     }
 ;
 
-mais_ou_menos_ou_or: mais
-                     | menos
-                     | or
+mais_ou_menos_ou_or: MAIS { $$ = "SOMA"; }
+                     | MENOS { $$ = "SUBT"; }
+                     | OR { $$ = "DISJ"; }
 ;
 
-mais_ou_menos: mais
-               | menos
-               |
+mais_ou_menos: MAIS { $$ = "SOMA"; }
+               | MENOS { $$ = "SUBT"; }
+               | { $$ = "NADA"; }
 ;
-
-mais: MAIS { $$ = "SOMA"; }
-; 
-
-menos: MENOS { $$ = "SUBT"; }
-; 
-
-or: OR { $$ = "DISJ"; }
-; 
 
 termo: termo mult_ou_div_ou_and fator
-       | fator
+       {
+         if ((!strcmp("MULT", $2) || !strcmp("DIVI", $2)) && $1 == INTEGER && $3 == INTEGER){
+            sprintf(mepa_command, "%s", $2); 
+            geraCodigo(NULL, mepa_command); 
+            $$ = INTEGER;
+         } else if (!strcmp("CONJ", $2) && $1 == BOOLEAN && $3 == BOOLEAN){
+            sprintf(mepa_command, "%s", $2); 
+            geraCodigo(NULL, mepa_command); 
+            $$ = BOOLEAN;
+         } else
+            imprimeErro("Tipos incopatíveis.");
+       }
+       | fator { $$ = $1; }
 ;
 
-mult_ou_div_ou_and: mult
-                    | div 
-                    | and
+mult_ou_div_ou_and: MULT { $$ = "MULT"; }
+                    | DIV { $$ = "DIVI"; } 
+                    | AND { $$ = "CONJ"; }
 ;
 
-mult: MULT { $$ = "MULT"; }
-;
+fator: IDENT
+       {
+         SymbolTableNode* node = find_node_from_symbol_table_by_identifier(symbol_table, token);
+         if(!node){
+            sprintf(error_command, "Variável '%s' não foi declarada ou está fora do escopo", token); 
+            imprimeErro(error_command);
+         }
 
-div: DIV { $$ = "DIVI"; }
-;
+         if(node->identifier_category == SIMPLE_VARIABLE){
+            SimpleVariableAttributes* attributes = (SimpleVariableAttributes *) node->attributes;
 
-and: AND { $$ = "CONJ"; }
-;
+            sprintf(mepa_command, "CRVL %d,%d", node->lexical_level, attributes->offset);
+            $$ = attributes->variable_type;
+         }
 
-fator: ident { geraCodigo(NULL, token); }
-       | numero { geraCodigo(NULL, token); }
+         geraCodigo(NULL, mepa_command);
+       }
+       | NUMERO 
+         { 
+            sprintf(mepa_command, "CRCT %s", token);
+            geraCodigo(NULL, mepa_command);
+            $$ = INTEGER;
+         }
        | ABRE_PARENTESES expressao FECHA_PARENTESES
        | NOT fator
 ;
-
-ident: IDENT
-;
-
-numero: NUMERO
-;
-
-
-
 
 %%
 

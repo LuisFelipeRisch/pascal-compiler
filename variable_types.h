@@ -4,6 +4,7 @@
 enum VariableTypes {
   UNKNOWN,
   INTEGER,
+  BOOLEAN,
 };
 
 #endif

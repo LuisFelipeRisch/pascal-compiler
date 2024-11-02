@@ -104,7 +104,7 @@ or { simbolo = simb_or;
             return OR;
 }
 
-mult { simbolo = simb_mult;
+\* { simbolo = simb_mult;
             strncpy (token, yytext, TAM_TOKEN);
             IMPRIME("mult ");
             return MULT;
