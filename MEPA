@@ -3,12 +3,10 @@
      CRVL 0,3
      CRVL 0,5
      SOMA
-     CRVL 0,6
-     SUBT
-     CRCT 1
-     CRCT 2
+     CRCT 3
      MULT
-     SOMA
+     CRCT 1
+     SUBT
      ARMZ 0,3
      DMEM 10
      PARA

@@ -234,7 +234,17 @@ fator: IDENT
             $$ = INTEGER;
          }
        | ABRE_PARENTESES expressao FECHA_PARENTESES
+         {
+            $$ = $2;
+         }
        | NOT fator
+         {
+            if ($2 == BOOLEAN){
+               geraCodigo(NULL, "NEGA");
+               $$ = BOOLEAN;
+            } else
+               imprimeErro("Tipos incopatíveis.");
+         }
 ;
 
 %%
