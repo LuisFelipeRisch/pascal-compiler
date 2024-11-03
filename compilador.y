@@ -138,8 +138,6 @@ while_comando: WHILE
                   sprintf(mepa_command, "R%02d", while_exit_label_number); 
                   geraCodigo(mepa_command, "NADA");
                }
-
-
 ;
 
 atribuicao_comando: IDENT 
