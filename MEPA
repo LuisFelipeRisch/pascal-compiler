@@ -1,8 +1,8 @@
      INPP
      AMEM 10
-     LEIT
-     ARMZ 0,3
-     LEIT
-     ARMZ 0,4
+     CRVL 0,3
+     IMPR
+     CRVL 0,4
+     IMPR
      DMEM 10
      PARA

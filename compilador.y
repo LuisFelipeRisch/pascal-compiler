@@ -26,7 +26,7 @@ SymbolTableNode* left_node;
 %token PROCEDURE FUNCTION IF THEN ELSE WHILE DO
 %token OR DIV AND LABEL TYPE ARRAY OF NOT
 %token IGUAL DIFERENTE MENOR MENOR_IGUAL MAIOR MAIOR_IGUAL
-%token MAIS MENOS MULT READ
+%token MAIS MENOS MULT READ WRITE
 
 %union {
    char *str;
@@ -112,13 +112,39 @@ comandos: comandos PONTO_E_VIRGULA comando_sem_rotulo
 
 comando_sem_rotulo: comando_composto
                     | read_comando
+                    | write_comando
                     | atribuicao_comando
                     | while_comando
                     |
 ;
 
 read_comando: READ ABRE_PARENTESES read_idents FECHA_PARENTESES
-; 
+;
+
+write_comando: WRITE ABRE_PARENTESES write_idents FECHA_PARENTESES
+;
+
+write_idents: write_idents VIRGULA write_ident
+              | write_ident
+;
+
+write_ident: IDENT
+             {
+               left_node = find_node_from_symbol_table_by_identifier(symbol_table, token); 
+               if (!left_node){
+                  sprintf(error_command, "Não foi possível encontrar a variável '%s' na tabela de símbolos!", token); 
+                  imprimeErro(error_command);
+               }
+
+               if(left_node->identifier_category == SIMPLE_VARIABLE){
+                  SimpleVariableAttributes* attributes = (SimpleVariableAttributes *) left_node->attributes;
+
+                  sprintf(mepa_command, "CRVL %d,%d", left_node->lexical_level, attributes->offset);
+                  geraCodigo(NULL, mepa_command);
+               }
+
+               geraCodigo(NULL, "IMPR");
+             }
 
 read_idents: read_idents VIRGULA read_ident
              | read_ident

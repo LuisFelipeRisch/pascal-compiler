@@ -74,6 +74,12 @@ read { simbolo = simb_read;
             return READ;
 }
 
+write { simbolo = simb_write;
+            strncpy (token, yytext, TAM_TOKEN);
+            IMPRIME("write ");
+            return WRITE;
+}
+
 if { simbolo = simb_if;
             strncpy (token, yytext, TAM_TOKEN);
             IMPRIME("if ");
