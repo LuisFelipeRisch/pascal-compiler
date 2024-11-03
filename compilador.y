@@ -177,9 +177,12 @@ while_comando: WHILE
                }
                expressao
                {
-                  sprintf(mepa_command, "DSVF R%02d", current_label_number); 
-                  push_int_stack(label_stack, current_label_number++); 
-                  geraCodigo(NULL, mepa_command);
+                  if ($3 == BOOLEAN) {
+                     sprintf(mepa_command, "DSVF R%02d", current_label_number); 
+                     push_int_stack(label_stack, current_label_number++); 
+                     geraCodigo(NULL, mepa_command);
+                  } else
+                     imprimeErro("Tipos Incompatíveis!");
                }
                DO comando_sem_rotulo
                {
@@ -212,7 +215,7 @@ logica_atribuicao: expressao
                    {
                      if(left_node->identifier_category == SIMPLE_VARIABLE){
                         SimpleVariableAttributes* attributes = (SimpleVariableAttributes *) left_node->attributes;
-                        if(attributes->variable_type != $1) imprimeErro("Tipos incopatíveis.");
+                        if(attributes->variable_type != $1) imprimeErro("Tipos Incompatíveis!");;
 
                         sprintf(mepa_command, "ARMZ %d,%d", left_node->lexical_level, attributes->offset);
                         geraCodigo(NULL, mepa_command);
@@ -229,7 +232,7 @@ expressao: expressao_simples relacao expressao_simples
                geraCodigo(NULL, $2);
                $$ = BOOLEAN;
             } else
-               imprimeErro("Tipos incopatíveis.");
+               imprimeErro("Tipos Incompatíveis!");;
            }
            | expressao_simples 
              { 
@@ -256,7 +259,7 @@ expressao_simples: expressao_simples mais_ou_menos_ou_or termo
                         geraCodigo(NULL, mepa_command); 
                         $$ = BOOLEAN;
                      } else
-                        imprimeErro("Tipos incopatíveis.");
+                        imprimeErro("Tipos Incompatíveis!");;
                    }
                    | mais_ou_menos termo
                      {
@@ -285,7 +288,7 @@ termo: termo mult_ou_div_ou_and fator
             geraCodigo(NULL, mepa_command); 
             $$ = BOOLEAN;
          } else
-            imprimeErro("Tipos incopatíveis.");
+            imprimeErro("Tipos Incompatíveis!");;
        }
        | fator { $$ = $1; }
 ;
@@ -328,7 +331,7 @@ fator: IDENT
                geraCodigo(NULL, "NEGA");
                $$ = BOOLEAN;
             } else
-               imprimeErro("Tipos incopatíveis.");
+               imprimeErro("Tipos Incompatíveis!");;
          }
 ;
 
