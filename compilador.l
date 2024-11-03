@@ -68,6 +68,12 @@ function { simbolo = simb_function;
             return FUNCTION;
 }
 
+read { simbolo = simb_read;
+            strncpy (token, yytext, TAM_TOKEN);
+            IMPRIME("read ");
+            return READ;
+}
+
 if { simbolo = simb_if;
             strncpy (token, yytext, TAM_TOKEN);
             IMPRIME("if ");

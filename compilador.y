@@ -26,7 +26,7 @@ SymbolTableNode* left_node;
 %token PROCEDURE FUNCTION IF THEN ELSE WHILE DO
 %token OR DIV AND LABEL TYPE ARRAY OF NOT
 %token IGUAL DIFERENTE MENOR MENOR_IGUAL MAIOR MAIOR_IGUAL
-%token MAIS MENOS MULT
+%token MAIS MENOS MULT READ
 
 %union {
    char *str;
@@ -111,9 +111,36 @@ comandos: comandos PONTO_E_VIRGULA comando_sem_rotulo
 ;
 
 comando_sem_rotulo: comando_composto
+                    | read_comando
                     | atribuicao_comando
                     | while_comando
                     |
+;
+
+read_comando: READ ABRE_PARENTESES read_idents FECHA_PARENTESES
+; 
+
+read_idents: read_idents VIRGULA read_ident
+             | read_ident
+; 
+
+read_ident: IDENT 
+            {
+               left_node = find_node_from_symbol_table_by_identifier(symbol_table, token); 
+               if (!left_node){
+                  sprintf(error_command, "Não foi possível encontrar a variável '%s' na tabela de símbolos!", token); 
+                  imprimeErro(error_command);
+               }
+
+               geraCodigo(NULL, "LEIT");
+               
+               if(left_node->identifier_category == SIMPLE_VARIABLE){
+                  SimpleVariableAttributes* attributes = (SimpleVariableAttributes *) left_node->attributes;
+
+                  sprintf(mepa_command, "ARMZ %d,%d", left_node->lexical_level, attributes->offset);
+                  geraCodigo(NULL, mepa_command);
+               }
+            }
 ;
 
 while_comando: WHILE
@@ -144,7 +171,7 @@ atribuicao_comando: IDENT
                     { 
                        left_node = find_node_from_symbol_table_by_identifier(symbol_table, token);
                        if(!left_node){
-                          sprintf(error_command, "Variável '%s' não foi declarada ou está fora do escopo", token); 
+                          sprintf(error_command, "Não foi possível encontrar a variável '%s' na tabela de símbolos!", token); 
                           imprimeErro(error_command);
                        }
                     }
@@ -246,7 +273,7 @@ fator: IDENT
        {
          SymbolTableNode* node = find_node_from_symbol_table_by_identifier(symbol_table, token);
          if(!node){
-            sprintf(error_command, "Variável '%s' não foi declarada ou está fora do escopo", token); 
+            sprintf(error_command, "Não foi possível encontrar a variável '%s' na tabela de símbolos!", token); 
             imprimeErro(error_command);
          }
 
