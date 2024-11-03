@@ -28,6 +28,9 @@ SymbolTableNode* left_node;
 %token IGUAL DIFERENTE MENOR MENOR_IGUAL MAIOR MAIOR_IGUAL
 %token MAIS MENOS MULT READ WRITE
 
+%nonassoc LOWER_THAN_ELSE
+%nonassoc ELSE
+
 %union {
    char *str;
    int int_val;
@@ -115,7 +118,40 @@ comando_sem_rotulo: comando_composto
                     | write_comando
                     | atribuicao_comando
                     | while_comando
+                    | if_comando
                     |
+;
+
+if_comando: if_then cond_else
+            {
+               sprintf(mepa_command, "R%02d", pop_int_stack(label_stack)); 
+               geraCodigo(mepa_command, "NADA");
+            }
+;
+
+if_then: IF expressao
+         {
+            if($2 == BOOLEAN) {
+               sprintf(mepa_command, "DSVF R%02d", current_label_number); 
+               push_int_stack(label_stack, current_label_number++); 
+               geraCodigo(NULL, mepa_command);
+            } else 
+               imprimeErro("Tipos Incompatíveis!");
+         }
+         THEN comando_sem_rotulo
+         {
+            sprintf(mepa_command, "DSVS R%02d", current_label_number); 
+            geraCodigo(NULL, mepa_command);
+
+            sprintf(mepa_command, "R%02d", pop_int_stack(label_stack)); 
+            geraCodigo(mepa_command, "NADA");
+
+            push_int_stack(label_stack, current_label_number++); 
+         }
+;
+
+cond_else: ELSE comando_sem_rotulo
+           | %prec LOWER_THAN_ELSE
 ;
 
 read_comando: READ ABRE_PARENTESES read_idents FECHA_PARENTESES
