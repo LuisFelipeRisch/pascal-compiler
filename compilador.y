@@ -13,9 +13,9 @@
 #include "int_stack.h"
 
 char mepa_command[100], error_command[100];
-int num_vars, dmem_num_vars;
+int num_vars, dmem_num_vars, current_label_number = 0;
 SymbolTable* symbol_table;
-IntStack* amem_stack;
+IntStack *amem_stack, *label_stack;
 SymbolTableNode* left_node;
 
 %}
@@ -112,7 +112,34 @@ comandos: comandos PONTO_E_VIRGULA comando_sem_rotulo
 
 comando_sem_rotulo: comando_composto
                     | atribuicao_comando
+                    | while_comando
                     |
+;
+
+while_comando: WHILE
+               {
+                  sprintf(mepa_command, "R%02d", current_label_number); 
+                  push_int_stack(label_stack, current_label_number++); 
+                  geraCodigo(mepa_command, "NADA");
+               }
+               expressao
+               {
+                  sprintf(mepa_command, "DSVF R%02d", current_label_number); 
+                  push_int_stack(label_stack, current_label_number++); 
+                  geraCodigo(NULL, mepa_command);
+               }
+               DO comando_sem_rotulo
+               {
+                  int while_exit_label_number = pop_int_stack(label_stack); 
+
+                  sprintf(mepa_command, "DSVS R%02d", pop_int_stack(label_stack)); 
+                  geraCodigo(NULL, mepa_command); 
+
+                  sprintf(mepa_command, "R%02d", while_exit_label_number); 
+                  geraCodigo(mepa_command, "NADA");
+               }
+
+
 ;
 
 atribuicao_comando: IDENT 
@@ -144,7 +171,14 @@ logica_atribuicao: expressao
 
 expressao: expressao_simples relacao expressao_simples
            {
-            geraCodigo(NULL, "expresssão ahh");
+            if((!strcmp("CMIG", $2) || !strcmp("CMDG", $2)  || 
+                !strcmp("CMME", $2) || !strcmp("CMEG", $2)  ||
+                !strcmp("CMMA", $2) || !strcmp("CMAG", $2)) && 
+                $1 == INTEGER && $3 == INTEGER) {
+               geraCodigo(NULL, $2);
+               $$ = BOOLEAN;
+            } else
+               imprimeErro("Tipos incopatíveis.");
            }
            | expressao_simples 
              { 
@@ -163,8 +197,8 @@ relacao: IGUAL { $$ = "CMIG"; }
 expressao_simples: expressao_simples mais_ou_menos_ou_or termo
                    {
                      if ((!strcmp("SOMA", $2) || !strcmp("SUBT", $2)) && $1 == INTEGER && $3 == INTEGER){
-                        sprintf(mepa_command, "%s", $2); 
-                        geraCodigo(NULL, mepa_command); 
+                        sprintf(mepa_command, "%s", $2);
+                        geraCodigo(NULL, $2); 
                         $$ = INTEGER;
                      } else if (!strcmp("DISJ", $2) && $1 == BOOLEAN && $3 == BOOLEAN){
                         sprintf(mepa_command, "%s", $2); 
@@ -266,12 +300,14 @@ int main (int argc, char** argv) {
 
    amem_stack = create_int_stack();
    symbol_table = create_symbol_table();
+   label_stack = create_int_stack();
 
    yyin=fp;
    yyparse();
 
    free_int_stack(amem_stack);
    free_symbol_table(symbol_table);
+   free_int_stack(label_stack);
 
    return 0;
 }

@@ -1,12 +1,15 @@
      INPP
      AMEM 10
+R00: NADA 
      CRVL 0,3
      CRVL 0,5
-     SOMA
-     CRCT 3
-     MULT
+     CMME
+     DSVF R01
+     CRVL 0,3
      CRCT 1
      SUBT
      ARMZ 0,3
+     DSVS R00
+R01: NADA 
      DMEM 10
      PARA
