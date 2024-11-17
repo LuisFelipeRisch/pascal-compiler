@@ -1,1 +1,20 @@
      INPP
+     DSVS R00
+R01: ENPR 1 
+     AMEM 1
+     DSVS R02
+R03: ENPR 2 
+     AMEM 1
+     DMEM 1
+     RTPR 2,0
+R02: NADA 
+     CRCT 1
+     CRCT 5
+     MULT
+     CRCT 2
+     SUBT
+     ARMZ 1,0
+     DMEM 1
+     RTPR 1,0
+R00: NADA 
+     PARA

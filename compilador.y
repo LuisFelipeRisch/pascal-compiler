@@ -12,21 +12,23 @@
 #include "symbol_table.h"
 #include "int_stack.h"
 #include "pass_by_types.h"
+#include "variable_types.h"
 
 char mepa_label[100], mepa_command[100], error_command[100], 
      current_procedure_token[TAM_TOKEN];
 int num_vars, dmem_num_vars, current_label_number = 0, current_formal_params_count;
 SymbolTable* symbol_table;
 IntStack *amem_stack, *label_stack;
-SymbolTableNode* left_node;
+SymbolTableNode *left_node, *current_procedure_node;
 enum PassByTypes current_formal_parameters_pass_by_type;
+enum VariableTypes current_formal_parameters_variable_type;
 
 %}
 
 %token PROGRAM ABRE_PARENTESES FECHA_PARENTESES
 %token VIRGULA PONTO_E_VIRGULA DOIS_PONTOS PONTO
 %token T_BEGIN T_END VAR IDENT NUMERO ATRIBUICAO
-%token PROCEDURE_TOKEN FUNCTION IF THEN ELSE WHILE DO INTEGER_TOKEN
+%token PROCEDURE_TOKEN FUNCTION_TOKEN IF THEN ELSE WHILE DO INTEGER_TOKEN
 %token OR DIV AND LABEL TYPE ARRAY OF NOT
 %token IGUAL DIFERENTE MENOR MENOR_IGUAL MAIOR MAIOR_IGUAL
 %token MAIS MENOS MULT READ WRITE
@@ -83,7 +85,6 @@ declaracao_subrotinas: declaracao_subrotinas declaracao_subrotina
 ;
 
 declaracao_subrotina: declaracao_procedimento
-                      |
 ;
 
 declaracao_procedimento: PROCEDURE_TOKEN IDENT
@@ -95,17 +96,26 @@ declaracao_procedimento: PROCEDURE_TOKEN IDENT
                            geraCodigo(NULL, mepa_command);
 
                            sprintf(mepa_label, "R%02d", current_label_number); 
-                           insert_procedure_in_symbol_table(symbol_table, token, nivel_lexico, current_label_number++);
+                           current_procedure_node = insert_procedure_in_symbol_table(symbol_table, token, nivel_lexico, current_label_number++);
 
                            sprintf(mepa_command, "ENPR %d", nivel_lexico); 
                            geraCodigo(mepa_label, mepa_command);
 
                            current_formal_params_count = 0;
-                           strncpy(current_procedure_token, token, TAM_TOKEN);
                          }
                          declaracao_parametros_formais PONTO_E_VIRGULA bloco
                          {
+                           remove_subroutines_from_symbol_table_in_lexical_level(symbol_table, nivel_lexico + 1); 
+                           remove_formal_parameters_from_symbol_table(symbol_table);
 
+                           current_procedure_node = symbol_table->top; 
+                           ProcedureAttributes* procedure_attributes = (ProcedureAttributes *) current_procedure_node->attributes;
+
+                           sprintf(mepa_command, "RTPR %d,%d", current_procedure_node->lexical_level, procedure_attributes->formal_params_count);
+                           geraCodigo(NULL, mepa_command); 
+
+                           sprintf(mepa_label, "R%02d", pop_int_stack(label_stack));
+                           geraCodigo(mepa_label, "NADA");
                          }
                          PONTO_E_VIRGULA
 
@@ -113,7 +123,7 @@ declaracao_procedimento: PROCEDURE_TOKEN IDENT
 
 declaracao_parametros_formais: ABRE_PARENTESES parametros_formais FECHA_PARENTESES
                                {
-
+                                 update_procedure_and_formal_parameters(symbol_table, current_procedure_node, current_formal_params_count, current_formal_parameters_variable_type);
                                }
                                |
 ;
@@ -138,7 +148,7 @@ lista_parametros_formais: lista_parametros_formais VIRGULA IDENT
                             }
 ;
 
-tipo_parametros_formais: INTEGER_TOKEN {  } 
+tipo_parametros_formais: INTEGER_TOKEN { current_formal_parameters_variable_type = INTEGER; } 
 ;
 
 parte_declara_vars:  var
@@ -160,7 +170,7 @@ declara_var: { }
             PONTO_E_VIRGULA
 ;
 
-tipo: IDENT
+tipo: INTEGER_TOKEN
 ;
 
 lista_id_var: lista_id_var VIRGULA IDENT
@@ -311,7 +321,6 @@ atribuicao_comando: IDENT
 ;
 
 atribuicao: ATRIBUICAO logica_atribuicao
-            |
 ;
 
 logica_atribuicao: expressao

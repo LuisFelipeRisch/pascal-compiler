@@ -72,7 +72,7 @@ procedure { simbolo = simb_procedure;
 function { simbolo = simb_function;
             strncpy (token, yytext, TAM_TOKEN);
             IMPRIME("function ");
-            return FUNCTION;
+            return FUNCTION_TOKEN;
 }
 
 read { simbolo = simb_read;

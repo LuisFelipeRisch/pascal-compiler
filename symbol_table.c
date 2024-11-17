@@ -53,7 +53,15 @@ void update_latest_nodes_with_variable_type(SymbolTable* symbol_table, enum Vari
 void remove_node_from_symbol_table(SymbolTable* symbol_table) {
   SymbolTableNode* top = symbol_table->top; 
 
-  symbol_table->top = top->previous; 
+  if(top->previous)
+    top->previous->next = NULL;
+
+  symbol_table->top = top->previous;
+
+  if (top->identifier_category == PROCEDURE){
+    ProcedureAttributes* procedure_attributes = (ProcedureAttributes *) top->attributes; 
+    free(procedure_attributes->parameters);
+  }
 
   free(top->identifier); 
   free(top->attributes); 
@@ -84,7 +92,7 @@ SymbolTableNode* find_node_from_symbol_table_by_identifier(SymbolTable* symbol_t
   return current_node; 
 }
 
-void insert_procedure_in_symbol_table(SymbolTable* symbol_table, char* identifier, unsigned int lexical_level, int procedure_label) {
+SymbolTableNode* insert_procedure_in_symbol_table(SymbolTable* symbol_table, char* identifier, unsigned int lexical_level, int procedure_label) {
   void* attributes = (void *) malloc(sizeof(ProcedureAttributes));
   ProcedureAttributes* procedure_attributes = (ProcedureAttributes *) attributes;
 
@@ -92,6 +100,8 @@ void insert_procedure_in_symbol_table(SymbolTable* symbol_table, char* identifie
   procedure_attributes->procedure_label = procedure_label;
 
   insert_in_symbol_table(symbol_table, identifier, PROCEDURE, lexical_level, attributes);
+
+  return symbol_table->top;
 }
 
 void insert_formal_parameter_in_symbol_table(SymbolTable* symbol_table, char* identifier, unsigned int lexical_level, enum PassByTypes pass_by_type){
@@ -102,4 +112,47 @@ void insert_formal_parameter_in_symbol_table(SymbolTable* symbol_table, char* id
   formal_parameter_attributes->formal_parameter_pass_by_type = pass_by_type;
 
   insert_in_symbol_table(symbol_table, identifier, FORMAL_PARAMETER, lexical_level, attributes);
+}
+
+void update_procedure_and_formal_parameters(SymbolTable* symbol_table, SymbolTableNode* procedure_node, int formal_params_count, enum VariableTypes formal_parameters_variable_type) {
+  ProcedureAttributes* procedure_attributes = (ProcedureAttributes *) procedure_node->attributes;
+  procedure_attributes->formal_params_count = formal_params_count;
+  procedure_attributes->parameters = (FormalParameterAttributes *) malloc(formal_params_count * sizeof(FormalParameterAttributes));
+
+  SymbolTableNode* current_node = symbol_table->top; 
+  int offset = -4;
+
+  for (int i = (formal_params_count - 1); i >= 0; i--)
+  {
+    FormalParameterAttributes* formal_param_attributes = (FormalParameterAttributes *) current_node->attributes; 
+    formal_param_attributes->offset = offset; 
+    formal_param_attributes->formal_parameter_variable_type = formal_parameters_variable_type;
+
+    procedure_attributes->parameters[i].offset = formal_param_attributes->offset;
+    procedure_attributes->parameters[i].formal_parameter_variable_type = formal_param_attributes->formal_parameter_variable_type;
+    procedure_attributes->parameters[i].formal_parameter_pass_by_type = formal_param_attributes->formal_parameter_pass_by_type;
+
+    offset--;
+    current_node = current_node->previous;
+  }
+}
+
+void remove_subroutines_from_symbol_table_in_lexical_level(SymbolTable *symbol_table, unsigned int lexical_level) {
+  SymbolTableNode* current_node = symbol_table->top; 
+  while (current_node && current_node->lexical_level == lexical_level && 
+        (current_node->identifier_category == PROCEDURE || 
+        current_node->identifier_category == FUNCTION))
+  {
+    remove_node_from_symbol_table(symbol_table);
+    current_node = symbol_table->top;
+  }
+}
+
+void remove_formal_parameters_from_symbol_table(SymbolTable* symbol_table){
+  SymbolTableNode* current_node = symbol_table->top; 
+  while (current_node && current_node->identifier_category == FORMAL_PARAMETER)
+  {
+    remove_node_from_symbol_table(symbol_table);
+    current_node = symbol_table->top;
+  }
 }

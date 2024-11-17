@@ -1,7 +1,13 @@
 program exemplo75 (input, output);
-var m,n, k:  integer;
-    a, b, c, d, e, f, g: integer;
-begin    
-    a := b;
+    procedure p(var a, b, c: integer); 
+    var d: integer;
+        procedure caceta;
+        var batata: integer;
+        begin
+        end;
+    begin
+        d := 1 * 5 - 2;
+    end;
+begin
 end.
 
