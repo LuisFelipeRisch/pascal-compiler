@@ -83,3 +83,23 @@ SymbolTableNode* find_node_from_symbol_table_by_identifier(SymbolTable* symbol_t
 
   return current_node; 
 }
+
+void insert_procedure_in_symbol_table(SymbolTable* symbol_table, char* identifier, unsigned int lexical_level, int procedure_label) {
+  void* attributes = (void *) malloc(sizeof(ProcedureAttributes));
+  ProcedureAttributes* procedure_attributes = (ProcedureAttributes *) attributes;
+
+  procedure_attributes->formal_params_count = 0; 
+  procedure_attributes->procedure_label = procedure_label;
+
+  insert_in_symbol_table(symbol_table, identifier, PROCEDURE, lexical_level, attributes);
+}
+
+void insert_formal_parameter_in_symbol_table(SymbolTable* symbol_table, char* identifier, unsigned int lexical_level, enum PassByTypes pass_by_type){
+  void* attributes = (void *) malloc(sizeof(FormalParameterAttributes));
+  FormalParameterAttributes* formal_parameter_attributes = (FormalParameterAttributes *) attributes; 
+
+  formal_parameter_attributes->formal_parameter_variable_type = UNKNOWN;
+  formal_parameter_attributes->formal_parameter_pass_by_type = pass_by_type;
+
+  insert_in_symbol_table(symbol_table, identifier, FORMAL_PARAMETER, lexical_level, attributes);
+}

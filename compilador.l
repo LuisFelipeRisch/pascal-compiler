@@ -55,10 +55,17 @@ program { simbolo  = simb_program;
           return PROGRAM;
  }
 
+integer { simbolo = simb_integer;
+            strncpy (token, yytext, TAM_TOKEN);
+            IMPRIME("integer ");
+            return INTEGER_TOKEN;
+
+}
+
 procedure { simbolo = simb_procedure;
             strncpy (token, yytext, TAM_TOKEN);
             IMPRIME("procedure ");
-            return PROCEDURE;
+            return PROCEDURE_TOKEN;
 
 }
 

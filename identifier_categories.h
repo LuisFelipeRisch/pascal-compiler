@@ -3,6 +3,8 @@
 
 enum IdentifierCategories {
   SIMPLE_VARIABLE,
+  PROCEDURE,
+  FORMAL_PARAMETER,
 };
 
 #endif

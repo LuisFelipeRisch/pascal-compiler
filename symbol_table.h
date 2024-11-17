@@ -3,10 +3,24 @@
 
 #include "identifier_categories.h"
 #include "variable_types.h"
+#include "pass_by_types.h"
 
+typedef struct FormalParameterAttributes FormalParameterAttributes;
+typedef struct ProcedureAttributes ProcedureAttributes;
 typedef struct SimpleVariableAttributes SimpleVariableAttributes;
 typedef struct SymbolTableNode SymbolTableNode;
 typedef struct SymbolTable SymbolTable;
+
+struct FormalParameterAttributes {
+  enum VariableTypes formal_parameter_variable_type; 
+  unsigned int offset;
+  enum PassByTypes formal_parameter_pass_by_type;
+};
+
+struct ProcedureAttributes {
+  int procedure_label;
+  unsigned int formal_params_count;
+};
 
 struct SimpleVariableAttributes {
   enum VariableTypes variable_type;
@@ -34,5 +48,7 @@ void update_latest_nodes_with_variable_type(SymbolTable* symbol_table, enum Vari
 void remove_n_latest_nodes_from_symbol_table(SymbolTable* symbol_table, int n); 
 void free_symbol_table(SymbolTable* symbol_table);
 SymbolTableNode* find_node_from_symbol_table_by_identifier(SymbolTable* symbol_table, char* identifier);
+void insert_procedure_in_symbol_table(SymbolTable* symbol_table, char* identifier, unsigned int lexical_level, int procedure_label);
+void insert_formal_parameter_in_symbol_table(SymbolTable* symbol_table, char* identifier, unsigned int lexical_level, enum PassByTypes pass_by_type);
 
 #endif

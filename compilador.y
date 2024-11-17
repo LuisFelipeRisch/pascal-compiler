@@ -11,19 +11,22 @@
 #include "compilador.h"
 #include "symbol_table.h"
 #include "int_stack.h"
+#include "pass_by_types.h"
 
-char mepa_command[100], error_command[100];
-int num_vars, dmem_num_vars, current_label_number = 0;
+char mepa_label[100], mepa_command[100], error_command[100], 
+     current_procedure_token[TAM_TOKEN];
+int num_vars, dmem_num_vars, current_label_number = 0, current_formal_params_count;
 SymbolTable* symbol_table;
 IntStack *amem_stack, *label_stack;
 SymbolTableNode* left_node;
+enum PassByTypes current_formal_parameters_pass_by_type;
 
 %}
 
 %token PROGRAM ABRE_PARENTESES FECHA_PARENTESES
 %token VIRGULA PONTO_E_VIRGULA DOIS_PONTOS PONTO
 %token T_BEGIN T_END VAR IDENT NUMERO ATRIBUICAO
-%token PROCEDURE FUNCTION IF THEN ELSE WHILE DO
+%token PROCEDURE_TOKEN FUNCTION IF THEN ELSE WHILE DO INTEGER_TOKEN
 %token OR DIV AND LABEL TYPE ARRAY OF NOT
 %token IGUAL DIFERENTE MENOR MENOR_IGUAL MAIOR MAIOR_IGUAL
 %token MAIS MENOS MULT READ WRITE
@@ -63,6 +66,7 @@ bloco: { num_vars = 0; desloc = 0; }
 
       push_int_stack(amem_stack, num_vars);
    }
+   declaracao_subrotinas
    comando_composto
    {
       dmem_num_vars = pop_int_stack(amem_stack); 
@@ -72,6 +76,69 @@ bloco: { num_vars = 0; desloc = 0; }
          geraCodigo(NULL, mepa_command);
       }
    }
+;
+
+declaracao_subrotinas: declaracao_subrotinas declaracao_subrotina
+                       | 
+;
+
+declaracao_subrotina: declaracao_procedimento
+                      |
+;
+
+declaracao_procedimento: PROCEDURE_TOKEN IDENT
+                         {
+                           nivel_lexico++; 
+
+                           sprintf(mepa_command, "DSVS R%02d", current_label_number);
+                           push_int_stack(label_stack, current_label_number++);
+                           geraCodigo(NULL, mepa_command);
+
+                           sprintf(mepa_label, "R%02d", current_label_number); 
+                           insert_procedure_in_symbol_table(symbol_table, token, nivel_lexico, current_label_number++);
+
+                           sprintf(mepa_command, "ENPR %d", nivel_lexico); 
+                           geraCodigo(mepa_label, mepa_command);
+
+                           current_formal_params_count = 0;
+                           strncpy(current_procedure_token, token, TAM_TOKEN);
+                         }
+                         declaracao_parametros_formais PONTO_E_VIRGULA bloco
+                         {
+
+                         }
+                         PONTO_E_VIRGULA
+
+;
+
+declaracao_parametros_formais: ABRE_PARENTESES parametros_formais FECHA_PARENTESES
+                               {
+
+                               }
+                               |
+;
+
+parametros_formais: parametros_formais PONTO_E_VIRGULA declaracao_parametro_formal
+                    | declaracao_parametro_formal
+;
+
+declaracao_parametro_formal: VAR { current_formal_parameters_pass_by_type = REFERENCE; } lista_parametros_formais DOIS_PONTOS tipo_parametros_formais
+                             | { current_formal_parameters_pass_by_type = VALUE; } lista_parametros_formais DOIS_PONTOS tipo_parametros_formais
+;
+
+lista_parametros_formais: lista_parametros_formais VIRGULA IDENT 
+                          { 
+                           insert_formal_parameter_in_symbol_table(symbol_table, token, nivel_lexico, current_formal_parameters_pass_by_type); 
+                           current_formal_params_count++; 
+                          }
+                          | IDENT 
+                            { 
+                              insert_formal_parameter_in_symbol_table(symbol_table, token, nivel_lexico, current_formal_parameters_pass_by_type);
+                              current_formal_params_count++;
+                            }
+;
+
+tipo_parametros_formais: INTEGER_TOKEN {  } 
 ;
 
 parte_declara_vars:  var
