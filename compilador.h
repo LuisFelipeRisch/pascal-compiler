@@ -11,6 +11,8 @@
  *
  * ------------------------------------------------------------------- */
 
+#include "pass_by_types.h"
+
 #define TAM_TOKEN 16
 
 typedef enum simbolos {
@@ -45,3 +47,4 @@ void geraCodigo (char*, char*);
 int yylex();
 void yyerror(const char *s);
 int imprimeErro ( const char* erro );
+char* fetch_load_command(enum PassByTypes ident_pass_type, enum PassByTypes param_pass_type);

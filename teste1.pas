@@ -1,13 +1,20 @@
-program exemplo75 (input, output);
-    procedure p(var a, b, c: integer); 
-    var d: integer;
-        procedure caceta;
-        var batata: integer;
-        begin
-        end;
-    begin
-        d := 1 * 5 - 2;
-    end;
-begin
-end.
+program procPassRef (input, output); 
+var k: integer;      
+procedure p(n:integer; var g:integer);     
+var h:integer;           
+begin                    
+   if (n<2)               
+      then g:=g+1         
+   else                
+   begin            
+      p(n-1,h);      
+      g:=h;                     
+      p(n-2,g)       
+   end;                       
+   write(n,g)             
+end;                   
+begin                     
+   k:=0;                  
+   p(3,k);          
+end. 
 

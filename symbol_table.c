@@ -156,3 +156,17 @@ void remove_formal_parameters_from_symbol_table(SymbolTable* symbol_table){
     current_node = symbol_table->top;
   }
 }
+
+SymbolTableNode* pop_node_from_symbol_table(SymbolTable* symbol_table){
+  if (!symbol_table->top)
+    return NULL;
+    
+  SymbolTableNode* top = symbol_table->top; 
+
+  if (top->previous)
+    top->previous->next = NULL; 
+  
+  symbol_table->top = top->previous;
+
+  return top;
+}
