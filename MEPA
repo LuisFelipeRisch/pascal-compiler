@@ -17,13 +17,13 @@ R02: NADA
      CRVL 1,-5
      CRCT 1
      SUBT
-     CRVL 1,0
+     CREN 1,0
      CHPR R01,1
      AMEM 1
      CRVL 1,-5
      CRCT 2
      SUBT
-     CRVL 1,1
+     CREN 1,1
      CHPR R01,1
      SOMA
      ARMZ 1,-6
@@ -43,7 +43,7 @@ R03: NADA
 R00: NADA 
      AMEM 1
      CRCT 3
-     CRVL 0,0
+     CREN 0,0
      CHPR R01,0
      IMPR
      CRVL 0,0

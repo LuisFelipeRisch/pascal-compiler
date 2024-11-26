@@ -643,6 +643,10 @@ so_ident: {
                ProcedureAttributes* procedure_attributes = (ProcedureAttributes *) current_subroutine->attributes;
                   
                param_pass_type = procedure_attributes->parameters[current_params_count].formal_parameter_pass_by_type;
+            } else if (current_subroutine && current_subroutine->identifier_category == FUNCTION){
+               FunctionAttributes* attributes = (FunctionAttributes *) current_subroutine->attributes;
+                  
+               param_pass_type = attributes->parameters[current_params_count].formal_parameter_pass_by_type;
             }
 
             if(!node){
