@@ -92,6 +92,18 @@ SymbolTableNode* find_node_from_symbol_table_by_identifier(SymbolTable* symbol_t
   return current_node; 
 }
 
+SymbolTableNode* insert_function_in_symbol_table(SymbolTable* symbol_table, char* identifier, unsigned int lexical_level, int function_label) {
+  void* attributes = (void *) malloc(sizeof(FunctionAttributes));
+  FunctionAttributes* function_attributes = (FunctionAttributes *) attributes;
+
+  function_attributes->formal_params_count = 0; 
+  function_attributes->function_label = function_label;
+
+  insert_in_symbol_table(symbol_table, identifier, FUNCTION, lexical_level, attributes);
+
+  return symbol_table->top;
+}
+
 SymbolTableNode* insert_procedure_in_symbol_table(SymbolTable* symbol_table, char* identifier, unsigned int lexical_level, int procedure_label) {
   void* attributes = (void *) malloc(sizeof(ProcedureAttributes));
   ProcedureAttributes* procedure_attributes = (ProcedureAttributes *) attributes;
@@ -112,6 +124,32 @@ void insert_formal_parameter_in_symbol_table(SymbolTable* symbol_table, char* id
   formal_parameter_attributes->formal_parameter_pass_by_type = pass_by_type;
 
   insert_in_symbol_table(symbol_table, identifier, FORMAL_PARAMETER, lexical_level, attributes);
+}
+
+void update_function_and_formal_parameters(SymbolTable* symbol_table, SymbolTableNode* function_node, int formal_params_count, enum VariableTypes formal_parameters_variable_type, enum VariableTypes return_type) {
+  FunctionAttributes* function_attributes = (FunctionAttributes *) function_node->attributes;
+  function_attributes->formal_params_count = formal_params_count;
+  function_attributes->parameters = (FormalParameterAttributes *) malloc(formal_params_count * sizeof(FormalParameterAttributes));
+  function_attributes->return_type = return_type;
+
+  SymbolTableNode* current_node = symbol_table->top; 
+  int offset = -4;
+
+  for (int i = (formal_params_count - 1); i >= 0; i--)
+  {
+    FormalParameterAttributes* formal_param_attributes = (FormalParameterAttributes *) current_node->attributes; 
+    formal_param_attributes->offset = offset; 
+    formal_param_attributes->formal_parameter_variable_type = formal_parameters_variable_type;
+
+    function_attributes->parameters[i].offset = formal_param_attributes->offset;
+    function_attributes->parameters[i].formal_parameter_variable_type = formal_param_attributes->formal_parameter_variable_type;
+    function_attributes->parameters[i].formal_parameter_pass_by_type = formal_param_attributes->formal_parameter_pass_by_type;
+
+    offset--;
+    current_node = current_node->previous;
+  }
+
+  function_attributes->offset = offset;
 }
 
 void update_procedure_and_formal_parameters(SymbolTable* symbol_table, SymbolTableNode* procedure_node, int formal_params_count, enum VariableTypes formal_parameters_variable_type) {

@@ -1,20 +1,19 @@
-program procPassRef (input, output); 
-var k: integer;      
-procedure p(n:integer; var g:integer);     
-var h:integer;           
+program funcao (input, output); 
+var  m: integer;      
+function f(n: integer; var k: integer): integer; 
+var p, q: integer;           
 begin                    
-   if (n<2)               
-      then g:=g+1         
+   if (n < 2) then
+      begin          
+         f:=n; k:=0     
+      end              
    else                
-   begin            
-      p(n-1,h);      
-      g:=h;                     
-      p(n-2,g)       
-   end;                       
-   write(n,g)             
-end;                   
-begin                     
-   k:=0;                  
-   p(3,k);          
-end. 
-
+      begin            
+         f:=f(n-1,p) + f(n-2,q);   
+         k:=p+q+1      
+      end;             
+   write(n,k);        
+end;                      
+begin                          
+   write(f(3,m),m); 
+end.

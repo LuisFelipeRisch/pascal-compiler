@@ -16,10 +16,10 @@
 
 char mepa_label[100], mepa_command[100], error_command[1024], 
      current_procedure_token[TAM_TOKEN];
-int num_vars, dmem_num_vars, current_label_number = 0, current_formal_params_count, current_params_count;
+int num_vars, dmem_num_vars, current_label_number = 0, current_formal_params_count, current_params_count, skip_update_procedure;
 SymbolTable *symbol_table, *subroutine_stack;
 IntStack *amem_stack, *label_stack, *params_count_stack;
-SymbolTableNode *left_node, *current_procedure_node, *current_subroutine;
+SymbolTableNode *left_node, *current_procedure_node, *current_function_node, *current_subroutine, *node;
 enum PassByTypes current_formal_parameters_pass_by_type;
 enum VariableTypes current_formal_parameters_variable_type;
 
@@ -47,6 +47,10 @@ enum VariableTypes current_formal_parameters_variable_type;
 %type <str> mais_ou_menos
 %type <int_val> termo
 %type <int_val> fator
+%type <int_val> fator_ident_ou_chamada_funcao
+%type <int_val> fator_ident_ou_chamada_funcao_logica
+%type <int_val> chamada_funcao_com_parametos
+%type <int_val> so_ident
 %type <int_val> expressao
 %type <int_val> expressao_simples
 %type <int_val> atribuicao
@@ -85,6 +89,49 @@ declaracao_subrotinas: declaracao_subrotinas declaracao_subrotina
 ;
 
 declaracao_subrotina: declaracao_procedimento
+                      | declaracao_funcao
+;
+
+declaracao_funcao: FUNCTION_TOKEN IDENT
+                   {
+                     nivel_lexico++;
+
+                     sprintf(mepa_command, "DSVS R%02d", current_label_number);
+                     push_int_stack(label_stack, current_label_number++);
+                     geraCodigo(NULL, mepa_command);
+
+                     sprintf(mepa_label, "R%02d", current_label_number);
+                     current_function_node = insert_function_in_symbol_table(symbol_table, token, nivel_lexico, current_label_number++);
+
+                     sprintf(mepa_command, "ENPR %d", nivel_lexico); 
+                     geraCodigo(mepa_label, mepa_command);
+
+                     current_formal_params_count = 0;
+                     skip_update_procedure = 1;
+                   }
+                   declaracao_parametros_formais DOIS_PONTOS tipo_retorno_de_funcao PONTO_E_VIRGULA bloco
+                   {
+                     remove_subroutines_from_symbol_table_in_lexical_level(symbol_table, nivel_lexico + 1); 
+                     remove_formal_parameters_from_symbol_table(symbol_table);
+
+                     current_function_node = symbol_table->top; 
+                     FunctionAttributes* function_attributes = (FunctionAttributes *) current_function_node->attributes;
+
+                     sprintf(mepa_command, "RTPR %d,%d", current_function_node->lexical_level, function_attributes->formal_params_count);
+                     geraCodigo(NULL, mepa_command); 
+
+                     sprintf(mepa_label, "R%02d", pop_int_stack(label_stack));
+                     geraCodigo(mepa_label, "NADA");
+
+                     nivel_lexico--;
+                   }
+                   PONTO_E_VIRGULA
+;
+
+tipo_retorno_de_funcao: INTEGER_TOKEN
+                        {
+                          update_function_and_formal_parameters(symbol_table, current_function_node, current_formal_params_count, current_formal_parameters_variable_type, INTEGER);
+                        }
 ;
 
 declaracao_procedimento: PROCEDURE_TOKEN IDENT
@@ -102,6 +149,7 @@ declaracao_procedimento: PROCEDURE_TOKEN IDENT
                            geraCodigo(mepa_label, mepa_command);
 
                            current_formal_params_count = 0;
+                           skip_update_procedure = 0;
                          }
                          declaracao_parametros_formais PONTO_E_VIRGULA bloco
                          {
@@ -125,7 +173,8 @@ declaracao_procedimento: PROCEDURE_TOKEN IDENT
 
 declaracao_parametros_formais: ABRE_PARENTESES parametros_formais FECHA_PARENTESES
                                {
-                                 update_procedure_and_formal_parameters(symbol_table, current_procedure_node, current_formal_params_count, current_formal_parameters_variable_type);
+                                 if (!skip_update_procedure)
+                                    update_procedure_and_formal_parameters(symbol_table, current_procedure_node, current_formal_params_count, current_formal_parameters_variable_type);
                                }
                                |
 ;
@@ -243,35 +292,7 @@ write_idents: write_idents VIRGULA write_ident
               | write_ident
 ;
 
-write_ident: IDENT
-            {
-               SymbolTableNode* node = find_node_from_symbol_table_by_identifier(symbol_table, token);
-               
-               enum PassByTypes param_pass_type = VALUE;
-               if (current_subroutine && current_subroutine->identifier_category == PROCEDURE){
-                  ProcedureAttributes* procedure_attributes = (ProcedureAttributes *) current_subroutine->attributes;
-                     
-                  param_pass_type = procedure_attributes->parameters[current_params_count].formal_parameter_pass_by_type;
-               }
-
-               if(!node){
-                  sprintf(error_command, "Não foi possível encontrar a variável '%s' na tabela de símbolos!", token); 
-                  imprimeErro(error_command);
-               }
-
-               if(node->identifier_category == SIMPLE_VARIABLE){
-                  SimpleVariableAttributes* attributes = (SimpleVariableAttributes *) node->attributes;
-
-                  sprintf(mepa_command, "%s %d,%d", fetch_load_command(VALUE, param_pass_type), node->lexical_level, attributes->offset);
-               } else if (node->identifier_category == FORMAL_PARAMETER) {
-                  FormalParameterAttributes* attributes = (FormalParameterAttributes *) node->attributes;
-                  
-                  sprintf(mepa_command, "%s %d,%d", fetch_load_command(attributes->formal_parameter_pass_by_type, param_pass_type), node->lexical_level, attributes->offset);
-               }
-
-               geraCodigo(NULL, mepa_command);
-               geraCodigo(NULL, "IMPR");
-            }
+write_ident: fator { geraCodigo(NULL, "IMPR"); }
 
 read_idents: read_idents VIRGULA read_ident
              | read_ident
@@ -418,6 +439,20 @@ lista_de_expressao: lista_de_expressao VIRGULA expressao
                         }
 
                         current_params_count++; 
+                     } else if (current_subroutine->identifier_category == FUNCTION) {
+                        FunctionAttributes* attributes = (FunctionAttributes *) current_subroutine->attributes;
+                        
+                        if (current_params_count >= attributes->formal_params_count){
+                           sprintf(error_command, "Mais parâmetros do que a função '%s' comporta!", current_subroutine->identifier); 
+                           imprimeErro(error_command);
+                        }
+
+                        if (attributes->parameters[current_params_count].formal_parameter_variable_type != $3){
+                           sprintf(error_command, "Parâmetro com o tipo diferente do esperado!"); 
+                           imprimeErro(error_command);
+                        }
+
+                        current_params_count++; 
                      } else {
                         sprintf(error_command, "Símbolo '%s' não é um procedimento nem função!", current_subroutine->identifier); 
                         imprimeErro(error_command);
@@ -434,6 +469,20 @@ lista_de_expressao: lista_de_expressao VIRGULA expressao
                            }
 
                            if (procedure_attributes->parameters[current_params_count].formal_parameter_variable_type != $1){
+                              sprintf(error_command, "Parâmetro com o tipo diferente do esperado!"); 
+                              imprimeErro(error_command);
+                           }
+
+                           current_params_count++; 
+                        } else if (current_subroutine->identifier_category == FUNCTION) {
+                           FunctionAttributes* attributes = (FunctionAttributes *) current_subroutine->attributes;
+                           
+                           if (current_params_count >= attributes->formal_params_count){
+                              sprintf(error_command, "Mais parâmetros do que a função '%s' comporta!", current_subroutine->identifier); 
+                              imprimeErro(error_command);
+                           }
+
+                           if (attributes->parameters[current_params_count].formal_parameter_variable_type != $1){
                               sprintf(error_command, "Parâmetro com o tipo diferente do esperado!"); 
                               imprimeErro(error_command);
                            }
@@ -462,6 +511,13 @@ logica_atribuicao: expressao
                            sprintf(mepa_command, "ARMZ %d,%d", left_node->lexical_level, attributes->offset);
                         else if (attributes->formal_parameter_pass_by_type == REFERENCE)
                            sprintf(mepa_command, "ARMI %d,%d", left_node->lexical_level, attributes->offset);
+                        
+                        geraCodigo(NULL, mepa_command);
+                     } else if (left_node->identifier_category == FUNCTION) {
+                        FunctionAttributes* attributes = (FunctionAttributes *) left_node->attributes;
+                        if(attributes->return_type != $1) imprimeErro("Tipos Incompatíveis!");
+
+                        sprintf(mepa_command, "ARMZ %d,%d", left_node->lexical_level, attributes->offset);
                         
                         geraCodigo(NULL, mepa_command);
                      }
@@ -543,41 +599,16 @@ mult_ou_div_ou_and: MULT { $$ = "MULT"; }
                     | AND { $$ = "CONJ"; }
 ;
 
-fator: IDENT
-       {
-         SymbolTableNode* node = find_node_from_symbol_table_by_identifier(symbol_table, token);
-         
-         enum PassByTypes param_pass_type = VALUE;
-         if (current_subroutine && current_subroutine->identifier_category == PROCEDURE){
-            ProcedureAttributes* procedure_attributes = (ProcedureAttributes *) current_subroutine->attributes;
-               
-            param_pass_type = procedure_attributes->parameters[current_params_count].formal_parameter_pass_by_type;
-         }
-
-         if(!node){
-            sprintf(error_command, "Não foi possível encontrar a variável '%s' na tabela de símbolos!", token); 
-            imprimeErro(error_command);
-         }
-
-         if(node->identifier_category == SIMPLE_VARIABLE){
-            SimpleVariableAttributes* attributes = (SimpleVariableAttributes *) node->attributes;
-
-            sprintf(mepa_command, "%s %d,%d", fetch_load_command(VALUE, param_pass_type), node->lexical_level, attributes->offset);
-            $$ = attributes->variable_type;
-         } else if (node->identifier_category == FORMAL_PARAMETER) {
-            FormalParameterAttributes* attributes = (FormalParameterAttributes *) node->attributes;
-            
-            sprintf(mepa_command, "%s %d,%d", fetch_load_command(attributes->formal_parameter_pass_by_type, param_pass_type), node->lexical_level, attributes->offset);
-            $$ = attributes->formal_parameter_variable_type;
-         }
-
-         geraCodigo(NULL, mepa_command);
-       }
+fator: fator_ident_ou_chamada_funcao { $$ = $1; }
        | NUMERO 
          { 
             if (current_subroutine && current_subroutine->identifier_category == PROCEDURE) {
                ProcedureAttributes* procedure_attributes = (ProcedureAttributes *) current_subroutine->attributes;
                if (procedure_attributes->parameters[current_params_count].formal_parameter_pass_by_type == REFERENCE)
+                  imprimeErro("Parâmetro precisa ser uma variável!");
+            } else if (current_subroutine && current_subroutine->identifier_category == FUNCTION) {
+               FunctionAttributes* attributes = (FunctionAttributes *) current_subroutine->attributes;
+               if (attributes->parameters[current_params_count].formal_parameter_pass_by_type == REFERENCE)
                   imprimeErro("Parâmetro precisa ser uma variável!");
             }
 
@@ -595,8 +626,91 @@ fator: IDENT
                geraCodigo(NULL, "NEGA");
                $$ = BOOLEAN;
             } else
-               imprimeErro("Tipos Incompatíveis!");;
+               imprimeErro("Tipos Incompatíveis!");
          }
+;
+
+fator_ident_ou_chamada_funcao: IDENT { node = find_node_from_symbol_table_by_identifier(symbol_table, token); } fator_ident_ou_chamada_funcao_logica { $$ = $3; }
+;
+
+fator_ident_ou_chamada_funcao_logica: ABRE_PARENTESES chamada_funcao_com_parametos FECHA_PARENTESES { $$ = $2; }
+                                      | so_ident { $$ = $1; }
+; 
+
+so_ident: {
+            enum PassByTypes param_pass_type = VALUE;
+            if (current_subroutine && current_subroutine->identifier_category == PROCEDURE){
+               ProcedureAttributes* procedure_attributes = (ProcedureAttributes *) current_subroutine->attributes;
+                  
+               param_pass_type = procedure_attributes->parameters[current_params_count].formal_parameter_pass_by_type;
+            }
+
+            if(!node){
+               sprintf(error_command, "Não foi possível encontrar a variável '%s' na tabela de símbolos!", token); 
+               imprimeErro(error_command);
+            }
+
+            if(node->identifier_category == SIMPLE_VARIABLE){
+               SimpleVariableAttributes* attributes = (SimpleVariableAttributes *) node->attributes;
+
+               sprintf(mepa_command, "%s %d,%d", fetch_load_command(VALUE, param_pass_type), node->lexical_level, attributes->offset);
+               $$ = attributes->variable_type;
+            } else if (node->identifier_category == FORMAL_PARAMETER) {
+               FormalParameterAttributes* attributes = (FormalParameterAttributes *) node->attributes;
+               
+               sprintf(mepa_command, "%s %d,%d", fetch_load_command(attributes->formal_parameter_pass_by_type, param_pass_type), node->lexical_level, attributes->offset);
+               $$ = attributes->formal_parameter_variable_type;
+            } else if (node->identifier_category == FUNCTION) {
+               FunctionAttributes* attributes = (FunctionAttributes *) node->attributes;
+               
+               geraCodigo(NULL, "AMEM 1");
+               sprintf(mepa_command, "CHPR R%02d,%d", attributes->function_label, nivel_lexico);
+               $$ = attributes->return_type;
+            }
+
+            geraCodigo(NULL, mepa_command);
+          }
+;
+
+chamada_funcao_com_parametos: {
+                                 if (!node)
+                                    imprimeErro("Símbolo não encontrado");
+                                 if (node->identifier_category != FUNCTION)
+                                    imprimeErro("Símbolo não é uma função!");
+                                 
+                                 FunctionAttributes* attributes = (FunctionAttributes *) node->attributes;
+
+                                 if (current_subroutine) {
+                                    insert_in_symbol_table(subroutine_stack, current_subroutine->identifier, FUNCTION, current_subroutine->lexical_level, current_subroutine->attributes); 
+                                    push_int_stack(params_count_stack, current_params_count);
+                                 }
+
+                                 geraCodigo(NULL, "AMEM 1");
+                                 
+                                 current_subroutine = node;
+                                 current_params_count = 0;
+                              }
+                              lista_de_expressao
+                              {
+                                 if (current_subroutine->identifier_category == FUNCTION) {
+                                    FunctionAttributes* attributes = (FunctionAttributes *) current_subroutine->attributes;
+
+                                    if (attributes->formal_params_count != current_params_count){
+                                       sprintf(error_command, "A função '%s' exige que seja informado %d parâmetros, mas só foram informados %d!", current_subroutine->identifier, attributes->formal_params_count, current_params_count); 
+                                       imprimeErro(error_command);
+                                    }
+
+                                    sprintf(mepa_command, "CHPR R%02d,%d", attributes->function_label, nivel_lexico);
+                                    geraCodigo(NULL, mepa_command);
+                                    $$ = attributes->return_type;
+
+                                    current_subroutine = pop_node_from_symbol_table(subroutine_stack);
+                                    current_params_count = pop_int_stack(params_count_stack);
+                                 } else {
+                                    sprintf(error_command, "Símbolo '%s' não é uma função!", current_subroutine->identifier); 
+                                    imprimeErro(error_command);
+                                 }
+                              }
 ;
 
 %%
