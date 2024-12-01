@@ -75,12 +75,16 @@ bloco: { num_vars = 0; desloc = 0; }
    declaracao_subrotinas
    comando_composto
    {
-      dmem_num_vars = pop_int_stack(amem_stack); 
+      dmem_num_vars = pop_int_stack(amem_stack);
+      remove_subroutines_from_symbol_table_in_lexical_level(symbol_table, nivel_lexico + 1); 
+
       if (dmem_num_vars > 0) {
          remove_n_latest_nodes_from_symbol_table(symbol_table, dmem_num_vars);
          sprintf(mepa_command, "DMEM %d", dmem_num_vars);
          geraCodigo(NULL, mepa_command);
       }
+
+      remove_formal_parameters_from_symbol_table(symbol_table); 
    }
 ;
 
@@ -111,13 +115,10 @@ declaracao_funcao: FUNCTION_TOKEN IDENT
                    }
                    declaracao_parametros_formais DOIS_PONTOS tipo_retorno_de_funcao PONTO_E_VIRGULA bloco
                    {
-                     remove_subroutines_from_symbol_table_in_lexical_level(symbol_table, nivel_lexico + 1); 
-                     remove_formal_parameters_from_symbol_table(symbol_table);
-
                      current_function_node = symbol_table->top; 
                      FunctionAttributes* function_attributes = (FunctionAttributes *) current_function_node->attributes;
 
-                     sprintf(mepa_command, "RTPR %d,%d", current_function_node->lexical_level, function_attributes->formal_params_count);
+                     sprintf(mepa_command, "RTPR %d, %d", current_function_node->lexical_level, function_attributes->formal_params_count);
                      geraCodigo(NULL, mepa_command); 
 
                      sprintf(mepa_label, "R%02d", pop_int_stack(label_stack));
@@ -153,13 +154,10 @@ declaracao_procedimento: PROCEDURE_TOKEN IDENT
                          }
                          declaracao_parametros_formais PONTO_E_VIRGULA bloco
                          {
-                           remove_subroutines_from_symbol_table_in_lexical_level(symbol_table, nivel_lexico + 1); 
-                           remove_formal_parameters_from_symbol_table(symbol_table);
-
                            current_procedure_node = symbol_table->top; 
                            ProcedureAttributes* procedure_attributes = (ProcedureAttributes *) current_procedure_node->attributes;
 
-                           sprintf(mepa_command, "RTPR %d,%d", current_procedure_node->lexical_level, procedure_attributes->formal_params_count);
+                           sprintf(mepa_command, "RTPR %d, %d", current_procedure_node->lexical_level, procedure_attributes->formal_params_count);
                            geraCodigo(NULL, mepa_command); 
 
                            sprintf(mepa_label, "R%02d", pop_int_stack(label_stack));
@@ -311,7 +309,7 @@ read_ident: IDENT
                if(left_node->identifier_category == SIMPLE_VARIABLE){
                   SimpleVariableAttributes* attributes = (SimpleVariableAttributes *) left_node->attributes;
 
-                  sprintf(mepa_command, "ARMZ %d,%d", left_node->lexical_level, attributes->offset);
+                  sprintf(mepa_command, "ARMZ %d, %d", left_node->lexical_level, attributes->offset);
                   geraCodigo(NULL, mepa_command);
                }
             }
@@ -369,7 +367,7 @@ chamada_procedimento_sem_parametros: {
                                              imprimeErro(error_command);
                                           }
 
-                                          sprintf(mepa_command, "CHPR R%02d,%d", procedure_attributes->procedure_label, nivel_lexico);
+                                          sprintf(mepa_command, "CHPR R%02d, %d", procedure_attributes->procedure_label, nivel_lexico);
                                           geraCodigo(NULL, mepa_command);
                                        } else {
                                           sprintf(error_command, "Símbolo '%s' não é um procedimento!", left_node->identifier); 
@@ -410,7 +408,7 @@ chamada_procedimento_com_parametos: ABRE_PARENTESES
                                              imprimeErro(error_command);
                                           }
 
-                                          sprintf(mepa_command, "CHPR R%02d,%d", procedure_attributes->procedure_label, nivel_lexico);
+                                          sprintf(mepa_command, "CHPR R%02d, %d", procedure_attributes->procedure_label, nivel_lexico);
                                           geraCodigo(NULL, mepa_command);
 
                                           current_subroutine = pop_node_from_symbol_table(subroutine_stack);
@@ -501,23 +499,23 @@ logica_atribuicao: expressao
                         SimpleVariableAttributes* attributes = (SimpleVariableAttributes *) left_node->attributes;
                         if(attributes->variable_type != $1) imprimeErro("Tipos Incompatíveis!");
 
-                        sprintf(mepa_command, "ARMZ %d,%d", left_node->lexical_level, attributes->offset);
+                        sprintf(mepa_command, "ARMZ %d, %d", left_node->lexical_level, attributes->offset);
                         geraCodigo(NULL, mepa_command);
                      } else if (left_node->identifier_category == FORMAL_PARAMETER) {
                         FormalParameterAttributes* attributes = (FormalParameterAttributes *) left_node->attributes;
                         if(attributes->formal_parameter_variable_type != $1) imprimeErro("Tipos Incompatíveis!");
 
                         if (attributes->formal_parameter_pass_by_type == VALUE)
-                           sprintf(mepa_command, "ARMZ %d,%d", left_node->lexical_level, attributes->offset);
+                           sprintf(mepa_command, "ARMZ %d, %d", left_node->lexical_level, attributes->offset);
                         else if (attributes->formal_parameter_pass_by_type == REFERENCE)
-                           sprintf(mepa_command, "ARMI %d,%d", left_node->lexical_level, attributes->offset);
+                           sprintf(mepa_command, "ARMI %d, %d", left_node->lexical_level, attributes->offset);
                         
                         geraCodigo(NULL, mepa_command);
                      } else if (left_node->identifier_category == FUNCTION) {
                         FunctionAttributes* attributes = (FunctionAttributes *) left_node->attributes;
                         if(attributes->return_type != $1) imprimeErro("Tipos Incompatíveis!");
 
-                        sprintf(mepa_command, "ARMZ %d,%d", left_node->lexical_level, attributes->offset);
+                        sprintf(mepa_command, "ARMZ %d, %d", left_node->lexical_level, attributes->offset);
                         
                         geraCodigo(NULL, mepa_command);
                      }
@@ -657,18 +655,18 @@ so_ident: {
             if(node->identifier_category == SIMPLE_VARIABLE){
                SimpleVariableAttributes* attributes = (SimpleVariableAttributes *) node->attributes;
 
-               sprintf(mepa_command, "%s %d,%d", fetch_load_command(VALUE, param_pass_type), node->lexical_level, attributes->offset);
+               sprintf(mepa_command, "%s %d, %d", fetch_load_command(VALUE, param_pass_type), node->lexical_level, attributes->offset);
                $$ = attributes->variable_type;
             } else if (node->identifier_category == FORMAL_PARAMETER) {
                FormalParameterAttributes* attributes = (FormalParameterAttributes *) node->attributes;
                
-               sprintf(mepa_command, "%s %d,%d", fetch_load_command(attributes->formal_parameter_pass_by_type, param_pass_type), node->lexical_level, attributes->offset);
+               sprintf(mepa_command, "%s %d, %d", fetch_load_command(attributes->formal_parameter_pass_by_type, param_pass_type), node->lexical_level, attributes->offset);
                $$ = attributes->formal_parameter_variable_type;
             } else if (node->identifier_category == FUNCTION) {
                FunctionAttributes* attributes = (FunctionAttributes *) node->attributes;
                
                geraCodigo(NULL, "AMEM 1");
-               sprintf(mepa_command, "CHPR R%02d,%d", attributes->function_label, nivel_lexico);
+               sprintf(mepa_command, "CHPR R%02d, %d", attributes->function_label, nivel_lexico);
                $$ = attributes->return_type;
             }
 
@@ -704,7 +702,7 @@ chamada_funcao_com_parametos: {
                                        imprimeErro(error_command);
                                     }
 
-                                    sprintf(mepa_command, "CHPR R%02d,%d", attributes->function_label, nivel_lexico);
+                                    sprintf(mepa_command, "CHPR R%02d, %d", attributes->function_label, nivel_lexico);
                                     geraCodigo(NULL, mepa_command);
                                     $$ = attributes->return_type;
 
