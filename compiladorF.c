@@ -16,6 +16,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "compilador.h"
+#include "pass_by_types.h"
 
 
 /* -------------------------------------------------------------------
@@ -42,6 +43,17 @@ void geraCodigo (char* rot, char* comando) {
 int imprimeErro ( const char* erro ) {
   fprintf (stderr, "Erro na linha %d - %s\n", nl, erro);
   exit(-1);
+}
+
+char* fetch_load_command(enum PassByTypes ident_pass_type, enum PassByTypes param_pass_type) {
+   if (ident_pass_type == VALUE && param_pass_type == VALUE)
+      return "CRVL"; 
+   else if (ident_pass_type == VALUE && param_pass_type == REFERENCE)
+      return "CREN";
+   else if (ident_pass_type == REFERENCE && param_pass_type == VALUE)
+      return "CRVI";
+   else if (ident_pass_type == REFERENCE && param_pass_type == REFERENCE)
+      return "CRVL";
 }
 
 void yyerror(const char *s) {

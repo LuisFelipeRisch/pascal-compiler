@@ -6,3 +6,4 @@ compilador.output
 compilador
 *.o
 .vscode
+/programs/*

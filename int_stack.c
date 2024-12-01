@@ -21,6 +21,9 @@ void push_int_stack(IntStack* int_stack, int data){
 }
 
 int pop_int_stack(IntStack* int_stack){
+  if (!int_stack->top)
+    return 0; 
+
   IntStackNode* top = int_stack->top; 
   int data = top->data;
 
