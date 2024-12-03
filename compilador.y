@@ -28,7 +28,7 @@ enum VariableTypes current_formal_parameters_variable_type;
 %token PROGRAM ABRE_PARENTESES FECHA_PARENTESES
 %token VIRGULA PONTO_E_VIRGULA DOIS_PONTOS PONTO
 %token T_BEGIN T_END VAR IDENT NUMERO ATRIBUICAO
-%token PROCEDURE_TOKEN FUNCTION_TOKEN IF THEN ELSE WHILE DO INTEGER_TOKEN
+%token PROCEDURE_TOKEN FUNCTION_TOKEN IF THEN ELSE WHILE DO INTEGER_TOKEN FORWARD_TOKEN
 %token OR DIV AND LABEL TYPE ARRAY OF NOT
 %token IGUAL DIFERENTE MENOR MENOR_IGUAL MAIOR MAIOR_IGUAL
 %token MAIS MENOS MULT READ WRITE
@@ -96,6 +96,51 @@ declaracao_subrotina: declaracao_procedimento
                       | declaracao_funcao
 ;
 
+declaracao_procedimento: PROCEDURE_TOKEN IDENT
+                         {
+                           nivel_lexico++;
+
+                           current_procedure_node = find_node_from_symbol_table_by_identifier(symbol_table, token);
+                           if (!current_procedure_node)
+                              current_procedure_node = insert_procedure_in_symbol_table(symbol_table, token, nivel_lexico, current_label_number++);
+                           
+                           if (current_procedure_node->lexical_level != nivel_lexico)
+                              imprimeErro("Níveis léxicos distintos!");
+
+                           current_formal_params_count = 0;
+                           skip_update_procedure = 0;
+                         } 
+                         declaracao_parametros_formais PONTO_E_VIRGULA fim_declaracao_procedimento
+; 
+
+fim_declaracao_procedimento: FORWARD_TOKEN PONTO_E_VIRGULA { nivel_lexico--; }
+                             |
+                             {
+                              sprintf(mepa_command, "DSVS R%02d", current_label_number);
+                              push_int_stack(label_stack, current_label_number++);
+                              geraCodigo(NULL, mepa_command);
+                              
+                              ProcedureAttributes* attrs = (ProcedureAttributes *) current_procedure_node->attributes;
+                              sprintf(mepa_label, "R%02d", attrs->procedure_label); 
+
+                              sprintf(mepa_command, "ENPR %d", nivel_lexico); 
+                              geraCodigo(mepa_label, mepa_command);
+                             }
+                             bloco 
+                             {
+                              current_procedure_node = symbol_table->top; 
+                              ProcedureAttributes* procedure_attributes = (ProcedureAttributes *) current_procedure_node->attributes;
+
+                              sprintf(mepa_command, "RTPR %d, %d", current_procedure_node->lexical_level, procedure_attributes->formal_params_count);
+                              geraCodigo(NULL, mepa_command); 
+
+                              sprintf(mepa_label, "R%02d", pop_int_stack(label_stack));
+                              geraCodigo(mepa_label, "NADA");
+
+                              nivel_lexico--;
+                             } PONTO_E_VIRGULA
+;
+
 declaracao_funcao: FUNCTION_TOKEN IDENT
                    {
                      nivel_lexico++;
@@ -133,40 +178,6 @@ tipo_retorno_de_funcao: INTEGER_TOKEN
                         {
                           update_function_and_formal_parameters(symbol_table, current_function_node, current_formal_params_count, current_formal_parameters_variable_type, INTEGER);
                         }
-;
-
-declaracao_procedimento: PROCEDURE_TOKEN IDENT
-                         {
-                           nivel_lexico++; 
-
-                           sprintf(mepa_command, "DSVS R%02d", current_label_number);
-                           push_int_stack(label_stack, current_label_number++);
-                           geraCodigo(NULL, mepa_command);
-
-                           sprintf(mepa_label, "R%02d", current_label_number); 
-                           current_procedure_node = insert_procedure_in_symbol_table(symbol_table, token, nivel_lexico, current_label_number++);
-
-                           sprintf(mepa_command, "ENPR %d", nivel_lexico); 
-                           geraCodigo(mepa_label, mepa_command);
-
-                           current_formal_params_count = 0;
-                           skip_update_procedure = 0;
-                         }
-                         declaracao_parametros_formais PONTO_E_VIRGULA bloco
-                         {
-                           current_procedure_node = symbol_table->top; 
-                           ProcedureAttributes* procedure_attributes = (ProcedureAttributes *) current_procedure_node->attributes;
-
-                           sprintf(mepa_command, "RTPR %d, %d", current_procedure_node->lexical_level, procedure_attributes->formal_params_count);
-                           geraCodigo(NULL, mepa_command); 
-
-                           sprintf(mepa_label, "R%02d", pop_int_stack(label_stack));
-                           geraCodigo(mepa_label, "NADA");
-
-                           nivel_lexico--;
-                         }
-                         PONTO_E_VIRGULA
-
 ;
 
 declaracao_parametros_formais: ABRE_PARENTESES parametros_formais FECHA_PARENTESES

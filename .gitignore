@@ -7,3 +7,4 @@ compilador
 *.o
 .vscode
 /programs/*
+/AvaliaTrabs/*

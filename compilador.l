@@ -75,6 +75,12 @@ function { simbolo = simb_function;
             return FUNCTION_TOKEN;
 }
 
+forward { simbolo = simb_forward;
+            strncpy (token, yytext, TAM_TOKEN);
+            IMPRIME("forward ");
+            return FORWARD_TOKEN;
+}
+
 read { simbolo = simb_read;
             strncpy (token, yytext, TAM_TOKEN);
             IMPRIME("read ");
