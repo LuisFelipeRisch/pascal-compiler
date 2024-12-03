@@ -145,34 +145,47 @@ declaracao_funcao: FUNCTION_TOKEN IDENT
                    {
                      nivel_lexico++;
 
-                     sprintf(mepa_command, "DSVS R%02d", current_label_number);
-                     push_int_stack(label_stack, current_label_number++);
-                     geraCodigo(NULL, mepa_command);
-
-                     sprintf(mepa_label, "R%02d", current_label_number);
-                     current_function_node = insert_function_in_symbol_table(symbol_table, token, nivel_lexico, current_label_number++);
-
-                     sprintf(mepa_command, "ENPR %d", nivel_lexico); 
-                     geraCodigo(mepa_label, mepa_command);
+                     current_function_node = find_node_from_symbol_table_by_identifier(symbol_table, token);
+                     if (!current_function_node)
+                        current_function_node = insert_function_in_symbol_table(symbol_table, token, nivel_lexico, current_label_number++);
+                     
+                     if (current_function_node->lexical_level != nivel_lexico)
+                        imprimeErro("Níveis léxicos distintos!");
 
                      current_formal_params_count = 0;
                      skip_update_procedure = 1;
                    }
-                   declaracao_parametros_formais DOIS_PONTOS tipo_retorno_de_funcao PONTO_E_VIRGULA bloco
-                   {
-                     current_function_node = symbol_table->top; 
-                     FunctionAttributes* function_attributes = (FunctionAttributes *) current_function_node->attributes;
-
-                     sprintf(mepa_command, "RTPR %d, %d", current_function_node->lexical_level, function_attributes->formal_params_count);
-                     geraCodigo(NULL, mepa_command); 
-
-                     sprintf(mepa_label, "R%02d", pop_int_stack(label_stack));
-                     geraCodigo(mepa_label, "NADA");
-
-                     nivel_lexico--;
-                   }
-                   PONTO_E_VIRGULA
+                   declaracao_parametros_formais DOIS_PONTOS tipo_retorno_de_funcao PONTO_E_VIRGULA fim_declaracao_funcao
 ;
+
+fim_declaracao_funcao: FORWARD_TOKEN PONTO_E_VIRGULA { nivel_lexico--; }
+                       |
+                       {
+                        sprintf(mepa_command, "DSVS R%02d", current_label_number);
+                        push_int_stack(label_stack, current_label_number++);
+                        geraCodigo(NULL, mepa_command);
+                        
+                        FunctionAttributes* attrs = (FunctionAttributes *) current_function_node->attributes;
+                        sprintf(mepa_label, "R%02d", attrs->function_label);
+
+                        sprintf(mepa_command, "ENPR %d", nivel_lexico); 
+                        geraCodigo(mepa_label, mepa_command);
+                       }
+                       bloco
+                       {
+                        current_function_node = symbol_table->top; 
+                        FunctionAttributes* function_attributes = (FunctionAttributes *) current_function_node->attributes;
+
+                        sprintf(mepa_command, "RTPR %d, %d", current_function_node->lexical_level, function_attributes->formal_params_count);
+                        geraCodigo(NULL, mepa_command); 
+
+                        sprintf(mepa_label, "R%02d", pop_int_stack(label_stack));
+                        geraCodigo(mepa_label, "NADA");
+
+                        nivel_lexico--;
+                       } PONTO_E_VIRGULA
+
+
 
 tipo_retorno_de_funcao: INTEGER_TOKEN
                         {
