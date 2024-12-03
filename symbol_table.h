@@ -21,6 +21,7 @@ struct FormalParameterAttributes {
 struct ProcedureAttributes {
   int procedure_label;
   unsigned int formal_params_count;
+  int implemented;
 
   FormalParameterAttributes* parameters; 
 };
@@ -30,6 +31,7 @@ struct FunctionAttributes {
   unsigned int formal_params_count;
   enum VariableTypes return_type;
   int offset;
+  int implemented;
 
   FormalParameterAttributes* parameters; 
 };
@@ -68,5 +70,6 @@ void update_procedure_and_formal_parameters(SymbolTable* symbol_table, SymbolTab
 void remove_subroutines_from_symbol_table_in_lexical_level(SymbolTable *symbol_table, unsigned int lexical_level); 
 void remove_formal_parameters_from_symbol_table(SymbolTable* symbol_table);
 SymbolTableNode* pop_node_from_symbol_table(SymbolTable* symbol_table);
+int check_for_subroutines_not_implemented(SymbolTable* symbol_table);
 
 #endif

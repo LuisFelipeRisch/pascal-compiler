@@ -208,3 +208,27 @@ SymbolTableNode* pop_node_from_symbol_table(SymbolTable* symbol_table){
 
   return top;
 }
+
+int check_for_subroutines_not_implemented(SymbolTable* symbol_table){
+  if (!symbol_table->top)
+    return 1; 
+
+  SymbolTableNode* current_node = symbol_table->top;
+  int all_implemented = 1; 
+
+  while (current_node && all_implemented)
+  {
+    if (current_node->identifier_category == FUNCTION){
+      FunctionAttributes* attrs = (FunctionAttributes *) current_node->attributes;
+      if (!attrs->implemented)
+        all_implemented = 0;
+    } else if (current_node->identifier_category == PROCEDURE){
+      ProcedureAttributes* attrs = (ProcedureAttributes *) current_node->attributes;
+      if (!attrs->implemented)
+        all_implemented = 0;
+    }
+    current_node = current_node->previous;
+  }
+
+  return all_implemented;
+}

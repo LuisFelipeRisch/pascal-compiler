@@ -75,6 +75,9 @@ bloco: { num_vars = 0; desloc = 0; }
    declaracao_subrotinas
    comando_composto
    {
+      if (!check_for_subroutines_not_implemented(symbol_table))
+         imprimeErro("Há alguma subrotina não implementada!");
+
       dmem_num_vars = pop_int_stack(amem_stack);
       remove_subroutines_from_symbol_table_in_lexical_level(symbol_table, nivel_lexico + 1); 
 
@@ -101,11 +104,12 @@ declaracao_procedimento: PROCEDURE_TOKEN IDENT
                            nivel_lexico++;
 
                            current_procedure_node = find_node_from_symbol_table_by_identifier(symbol_table, token);
-                           if (!current_procedure_node)
+                           if (!current_procedure_node){
                               current_procedure_node = insert_procedure_in_symbol_table(symbol_table, token, nivel_lexico, current_label_number++);
-                           
-                           if (current_procedure_node->lexical_level != nivel_lexico)
-                              imprimeErro("Níveis léxicos distintos!");
+
+                              ProcedureAttributes* attrs = (ProcedureAttributes *) current_procedure_node->attributes;
+                              attrs->implemented = 0;
+                           }
 
                            current_formal_params_count = 0;
                            skip_update_procedure = 0;
@@ -130,6 +134,7 @@ fim_declaracao_procedimento: FORWARD_TOKEN PONTO_E_VIRGULA { nivel_lexico--; }
                              {
                               current_procedure_node = symbol_table->top; 
                               ProcedureAttributes* procedure_attributes = (ProcedureAttributes *) current_procedure_node->attributes;
+                              procedure_attributes->implemented = 1;
 
                               sprintf(mepa_command, "RTPR %d, %d", current_procedure_node->lexical_level, procedure_attributes->formal_params_count);
                               geraCodigo(NULL, mepa_command); 
@@ -146,11 +151,11 @@ declaracao_funcao: FUNCTION_TOKEN IDENT
                      nivel_lexico++;
 
                      current_function_node = find_node_from_symbol_table_by_identifier(symbol_table, token);
-                     if (!current_function_node)
+                     if (!current_function_node){
                         current_function_node = insert_function_in_symbol_table(symbol_table, token, nivel_lexico, current_label_number++);
-                     
-                     if (current_function_node->lexical_level != nivel_lexico)
-                        imprimeErro("Níveis léxicos distintos!");
+                        FunctionAttributes* attrs = (FunctionAttributes *) current_function_node->attributes; 
+                        attrs->implemented = 0;
+                     }
 
                      current_formal_params_count = 0;
                      skip_update_procedure = 1;
@@ -175,6 +180,7 @@ fim_declaracao_funcao: FORWARD_TOKEN PONTO_E_VIRGULA { nivel_lexico--; }
                        {
                         current_function_node = symbol_table->top; 
                         FunctionAttributes* function_attributes = (FunctionAttributes *) current_function_node->attributes;
+                        function_attributes->implemented = 1;
 
                         sprintf(mepa_command, "RTPR %d, %d", current_function_node->lexical_level, function_attributes->formal_params_count);
                         geraCodigo(NULL, mepa_command); 
