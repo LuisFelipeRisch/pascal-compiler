@@ -125,6 +125,7 @@ fim_declaracao_procedimento: FORWARD_TOKEN PONTO_E_VIRGULA { nivel_lexico--; }
                               geraCodigo(NULL, mepa_command);
                               
                               ProcedureAttributes* attrs = (ProcedureAttributes *) current_procedure_node->attributes;
+                              attrs->implemented = 1;
                               sprintf(mepa_label, "R%02d", attrs->procedure_label); 
 
                               sprintf(mepa_command, "ENPR %d", nivel_lexico); 
@@ -134,7 +135,6 @@ fim_declaracao_procedimento: FORWARD_TOKEN PONTO_E_VIRGULA { nivel_lexico--; }
                              {
                               current_procedure_node = symbol_table->top; 
                               ProcedureAttributes* procedure_attributes = (ProcedureAttributes *) current_procedure_node->attributes;
-                              procedure_attributes->implemented = 1;
 
                               sprintf(mepa_command, "RTPR %d, %d", current_procedure_node->lexical_level, procedure_attributes->formal_params_count);
                               geraCodigo(NULL, mepa_command); 
@@ -172,6 +172,7 @@ fim_declaracao_funcao: FORWARD_TOKEN PONTO_E_VIRGULA { nivel_lexico--; }
                         
                         FunctionAttributes* attrs = (FunctionAttributes *) current_function_node->attributes;
                         sprintf(mepa_label, "R%02d", attrs->function_label);
+                        attrs->implemented = 1;
 
                         sprintf(mepa_command, "ENPR %d", nivel_lexico); 
                         geraCodigo(mepa_label, mepa_command);
@@ -180,7 +181,6 @@ fim_declaracao_funcao: FORWARD_TOKEN PONTO_E_VIRGULA { nivel_lexico--; }
                        {
                         current_function_node = symbol_table->top; 
                         FunctionAttributes* function_attributes = (FunctionAttributes *) current_function_node->attributes;
-                        function_attributes->implemented = 1;
 
                         sprintf(mepa_command, "RTPR %d, %d", current_function_node->lexical_level, function_attributes->formal_params_count);
                         geraCodigo(NULL, mepa_command); 

@@ -210,6 +210,7 @@ SymbolTableNode* pop_node_from_symbol_table(SymbolTable* symbol_table){
 }
 
 int check_for_subroutines_not_implemented(SymbolTable* symbol_table){
+  return 1;
   if (!symbol_table->top)
     return 1; 
 
